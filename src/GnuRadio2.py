@@ -344,7 +344,7 @@ class ReceiverStage1(gr.hier_block2):
         self.gr_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
         if filename_raw is not None:
-            self.file_sink_raw = blocks.file_sink(gr.sizeof_short*1, str(filename_raw))
+            self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
             self.file_sink_raw.set_unbuffered(False)
             
         ##################################################

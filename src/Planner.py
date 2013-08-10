@@ -25,6 +25,8 @@ from PyQt4 import QtOpenGL
 import ephem
 import math
 import datetime
+import threading
+import GnuRadio2
 
 class PlannerSat(QtGui.QGraphicsRectItem):
     def __init__(self, x, y, w, h, sat):   #, marker_id, pen, brush, font, db, parent):
@@ -77,9 +79,25 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.timer.start(diff)
         self.ready = True
 
+    def runCapture(self):
+        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw)
+        print 'Starting cpt 1'
+        self.cpt.run()
+        print 'Finished (cpt)'
+
+    def runRx(self):
+        self.baseRX = GnuRadio2.Base_RX('/data/matt/mygnuradio/GroundStation_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
+                                        self.rx_bw)
+        self.baseRX.Run()
+
+    def startChannel(self, chan):
+        print 'We should be starting channel', chan.name, chan.mode
+        
     def startReceiver(self):
         print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
         self.timer.stop()
+        threading.Thread(target=self.runCapture).start()
+        threading.Thread(target=self.runRx).start()
         self.timer2 = QtCore.QTimer()
         self.timer2.timeout.connect(self.stopReceiver)
         self.timer2.setSingleShot(True)
@@ -87,12 +105,14 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
 
     def stopReceiver(self):
         print '******* Stopping.....', self.freq
+        self.baseRX.stop()
+        self.cpt.stop()
         self.hide()
         
     def addChannel(self, name, mode, freq, params):
         print 'Adding', name
         self.channels.append(PlannerChannel(self, name, mode, freq, params))
-
+        
     def update(self, fx0, scale_x, scale_y, off_x, off_y):
         if self.ready:
             y = ((self.start_time - ephem.now()) * 24.0 * 60.0) * scale_y + off_y
@@ -122,7 +142,18 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.freq = freq
         self.start_time = params[0]
         self.stop_time = params[4]
+        self.chan_timer = QtCore.QTimer()
+        self.chan_timer.timeout.connect(self.startChannel)
+        self.chan_timer.setSingleShot(True)
+        self.chan_timer.start(self.when_ms())
         
+    def startChannel(self):
+        self.parent.startChannel(self)
+        
+    # return the number of millisecs till we need to start
+    def when_ms(self):
+        return ((self.start_time - ephem.now()) * 24.0 * 60.0 * 60.0 * 1000.0)
+    
     def update(self, fx0, scale_x, scale_y, off_x, off_y):
         y = ((self.start_time - ephem.now()) * 24.0 * 60.0) * scale_y + off_y
         h = min(((self.stop_time - max(self.start_time, ephem.now())) * 24.0 * 60.0) * scale_y, 25 * 60 * scale_y - y)
