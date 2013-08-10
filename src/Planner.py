@@ -53,7 +53,7 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         self.params = params[:]
         
 class PlannerReceiver(QtGui.QGraphicsRectItem):
-    def __init__(self, scene):
+    def __init__(self, scene, bw):
         QtGui.QGraphicsRectItem.__init__(self, scene = scene)
         brush = QtGui.QBrush()
         
@@ -63,12 +63,31 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.setBrush(brush)
         self.channels = []
         self.ready = False
+        self.rx_bw = bw
         
     def setParams(self, time, duration, freq):
         self.start_time = time
         self.duration = duration
         self.freq = freq
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.startReceiver)
+        self.timer.setSingleShot(True)
+        diff = (self.start_time - ephem.now()) * 24.0 * 60.0 * 60.0 * 1000
+        print 'Starting in',diff,'ms'
+        self.timer.start(diff)
         self.ready = True
+
+    def startReceiver(self):
+        print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
+        self.timer.stop()
+        self.timer2 = QtCore.QTimer()
+        self.timer2.timeout.connect(self.stopReceiver)
+        self.timer2.setSingleShot(True)
+        self.timer2.start(self.duration * 60.0 * 1000)
+
+    def stopReceiver(self):
+        print '******* Stopping.....', self.freq
+        self.hide()
         
     def addChannel(self, name, mode, freq, params):
         print 'Adding', name
@@ -80,7 +99,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
             h = min(min(self.duration, (self.start_time - ephem.now()) * 24 * 60 + self.duration) * scale_y, 25 * 60 * scale_y - y)
         
             # Calculate the width from the mode - one day!
-            w = 1536000 * scale_x
+            w = self.rx_bw * scale_x
             x = (self.freq - (fx0 * 1e6)) * scale_x + off_x - w/2
             self.setRect(x, max(y, off_y), w, h)
             for x in xrange(len(self.channels)):
@@ -129,6 +148,7 @@ class Planner(QtGui.QGraphicsView):
 
         self.fx0 = int(freq0)
         self.bw = int(bw)
+        self.default_rx_bw = 1536000.0 # Need a way to let user configure this - also allow for multiple RX units?
         
     def drawAxis(self):
         
@@ -223,9 +243,10 @@ class Planner(QtGui.QGraphicsView):
             
     def mousePressEvent(self, evt):
         pos = evt.pos()
-        self.rx.append(PlannerReceiver(scene=self.scene()))
-        self.rx[-1].setRect(pos.x() - (1.536e6 * self.scale_x / 2.0), pos.y() + self.verticalScrollBar().value(),
-                        1.536e6 * self.scale_x,                   1)
+        self.rx.append(PlannerReceiver(scene=self.scene(), bw = self.default_rx_bw))
+        self.rx[-1].setRect(pos.x() - (self.default_rx_bw * self.scale_x / 2.0),
+                            pos.y() + self.verticalScrollBar().value(),
+                            self.default_rx_bw * self.scale_x,                   1)
         self.rx[-1].show()
         
     def mouseReleaseEvent(self, evt):
@@ -241,8 +262,7 @@ class Planner(QtGui.QGraphicsView):
         self.rx[-1].setParams(ephem.date(ephem.now() + ((rect.y() - self.orig_y) / self.scale_y) * ephem.minute),
                               rect.height() / self.scale_y,
                               (rect.x() + rect.width()/2 - self.orig_x) / self.scale_x + (self.fx0 * 1e6))
-                          
-                                     
+        
         for f in self.scene().items(rect):
             print f
             if isinstance(f, PlannerSat):
