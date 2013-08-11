@@ -36,3 +36,6 @@ nosetests.xml
 
 # Editor
 *~
+
+# Local database
+groundstation.db

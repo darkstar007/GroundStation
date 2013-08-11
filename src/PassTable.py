@@ -44,7 +44,7 @@ class PassTable(QtGui.QTableWidget):
             row_start = 0
             
             for passes in xrange(len(satellite.passList)):
-                tr, azr, tt, altt, ts, azs = satellite.passList[passes]
+                tr, azr, tt, altt, ts, azs, lat, lon, alt = satellite.passList[passes]
                 found = False
                 if math.degrees(altt) > 15.0 and (tr - ephem.now()) < 1.0 and tr > ephem.now():
                     for row in xrange(row_start, self.rowCount()):

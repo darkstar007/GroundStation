@@ -203,7 +203,15 @@ class Database():
             return ('SSB')
         else:
             return (res[0][0])
-        
+
+    def getTLE(self, name):
+        self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name', (name,))
+        res = self.curs.fetchall()
+        if len(res) == 0:
+            return (('', ''))
+        else:
+            return (res[0])
+
     def getSat(self, name):
         self.curs.execute('SELECT display, grtrack FROM pers WHERE name=?', (name,))
         res = self.curs.fetchall()
@@ -269,7 +277,7 @@ class Database():
         else:
             dt_fetch = None
 
-        # So go and grab a new ephemeris if we don't hav one or the ephoch is close to a day old and we haven't
+        # So go and grab a new ephemeris if we don't have one or the ephoch is close to a day old and we haven't
         #  grabbed a new one in the last 0.2 days
         # We should also add an 'event' to say when we should next try and grab a set of ephem data. Hmm... a event
         #  manager....hmmmmm

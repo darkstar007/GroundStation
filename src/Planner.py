@@ -27,6 +27,7 @@ import math
 import datetime
 import threading
 import GnuRadio2
+import atexit
 
 class PlannerSat(QtGui.QGraphicsRectItem):
     def __init__(self, x, y, w, h, sat):   #, marker_id, pen, brush, font, db, parent):
@@ -50,7 +51,8 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         self.name = sat.sat.name
         self.mode = sat.mode
         self.freq = sat.freq
-
+        self.tle = sat.tle
+        
     def setParams(self, params):
         self.params = params[:]
         
@@ -66,6 +68,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.channels = []
         self.ready = False
         self.rx_bw = bw
+        self.baseRX = None
         
     def setParams(self, time, duration, freq):
         self.start_time = time
@@ -85,19 +88,27 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.cpt.run()
         print 'Finished (cpt)'
 
-    def runRx(self):
-        self.baseRX = GnuRadio2.Base_RX('/data/matt/mygnuradio/GroundStation_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
-                                        self.rx_bw)
+    def runRX(self):
         self.baseRX.Run()
 
     def startChannel(self, chan):
         print 'We should be starting channel', chan.name, chan.mode
+        kwords = chan.kwords.copy()
+        kwords['frequency_offset'] = chan.freq - self.freq
+        print 'kwords',kwords
+        print 'c.k', chan.kwords
+        self.baseRX.add_channel(chan.type, chan.args, kwords)
         
     def startReceiver(self):
         print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
         self.timer.stop()
-        threading.Thread(target=self.runCapture).start()
-        threading.Thread(target=self.runRx).start()
+        self.cpt_thread = threading.Thread(target=self.runCapture)
+        self.cpt_thread.start()
+        self.baseRX = GnuRadio2.Base_RX('/data/matt/mygnuradio/GroundStation_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
+                                        self.rx_bw)
+        self.baseRX_thread = threading.Thread(target=self.runRX)
+        self.baseRX_thread.start()
+        
         self.timer2 = QtCore.QTimer()
         self.timer2.timeout.connect(self.stopReceiver)
         self.timer2.setSingleShot(True)
@@ -109,9 +120,9 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.cpt.stop()
         self.hide()
         
-    def addChannel(self, name, mode, freq, params):
+    def addChannel(self, name, mode, freq, tle, params):
         print 'Adding', name
-        self.channels.append(PlannerChannel(self, name, mode, freq, params))
+        self.channels.append(PlannerChannel(self, name, mode, freq, tle, params))
         
     def update(self, fx0, scale_x, scale_y, off_x, off_y):
         if self.ready:
@@ -129,7 +140,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
                     self.channels[x].update(fx0, scale_x, scale_y, off_x, off_y)
                             
 class PlannerChannel(QtGui.QGraphicsRectItem):
-    def __init__(self, parent, name, mode, freq, params):
+    def __init__(self, parent, name, mode, freq, tle, params):
         QtGui.QGraphicsRectItem.__init__(self, parent = parent)
         brush = QtGui.QBrush()
         
@@ -146,6 +157,28 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.chan_timer.timeout.connect(self.startChannel)
         self.chan_timer.setSingleShot(True)
         self.chan_timer.start(self.when_ms())
+        if self.mode == '1k2_AFSK':
+            self.type = GnuRadio2.FM_RX_Channel
+        elif self.mode == 'CW':
+            self.type = GnuRadio2.SSB_RX_Channel
+        elif self.mode == 'APRS':
+            self.type = GnuRadio2.FM_RX_Channel
+        else:
+            self.type = GnuRadio2.SSB_RX_Channel
+
+        self.lat = params[6]
+        self.lon = params[7]
+        self.alt = params[8]
+        self.tle = tle
+        self.parent = parent
+        print 'tle', self.tle
+        self.args = (self.name,
+                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
+                     self.freq, self.tle[0], self.tle[1],
+                     math.degrees(self.lat), math.degrees(self.lon), self.alt,
+                     self.start_time.datetime())
+                     
+        self.kwords = {}
         
     def startChannel(self):
         self.parent.startChannel(self)
@@ -180,6 +213,7 @@ class Planner(QtGui.QGraphicsView):
         self.fx0 = int(freq0)
         self.bw = int(bw)
         self.default_rx_bw = 1536000.0 # Need a way to let user configure this - also allow for multiple RX units?
+        atexit.register(self.cleanup)
         
     def drawAxis(self):
         
@@ -238,7 +272,7 @@ class Planner(QtGui.QGraphicsView):
     def update(self, satellite):
         self.drawAxis()
         for passes in xrange(len(satellite.passList)):
-            tr, azr, tt, altt, ts, azs = satellite.passList[passes]
+            tr, azr, tt, altt, ts, azs, lat, lon, alt = satellite.passList[passes]
             if math.degrees(altt) > 15.0 and (tr - ephem.now()) < 1.0 and satellite.freq > (self.fx0 * 1e6) and satellite.freq < (self.fx0 + self.bw) * 1e6:
                 if tr < ephem.now():
                     tr = ephem.now()
@@ -251,7 +285,7 @@ class Planner(QtGui.QGraphicsView):
                 x = (satellite.freq - (self.fx0 * 1e6)) * self.scale_x + self.orig_x - w/2
 
                 satellite.passListPlan[passes].setRect(x, max(y, self.orig_y), w, h)
-                satellite.passListPlan[passes].setParams((tr, azr, tt, altt, ts, azs))
+                satellite.passListPlan[passes].setParams((tr, azr, tt, altt, ts, azs, lat, lon, alt))
 
                 if satellite.passListPlan[passes].scene() == None:
                     self.scene().addItem(satellite.passListPlan[passes])
@@ -298,9 +332,16 @@ class Planner(QtGui.QGraphicsView):
             print f
             if isinstance(f, PlannerSat):
                 print f.name, f.mode, f.freq, f.params
-                self.rx[-1].addChannel(f.name, f.mode, f.freq, f.params)
+                self.rx[-1].addChannel(f.name, f.mode, f.freq, f.tle, f.params)
         
     def mouseMoveEvent(self, evt):
         rect = self.rx[-1].rect()
         pos = evt.pos()
         self.rx[-1].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
+
+    def cleanup(self):
+        print 'In cleanup'
+        for r in self.rx:
+            if r.baseRX is not None:
+                r.baseRX.stop()
+        

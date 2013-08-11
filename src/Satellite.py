@@ -51,6 +51,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         self.doDisplay, self.doGroundTrack = self.db.getSat(self.sat.name)
         self.freq = self.db.getFreq(self.sat.name)
         self.mode = self.db.getMode(self.sat.name)
+        self.tle = self.db.getTLE(self.sat.name)
         
         #self.doGroundTrack = True
 
@@ -85,7 +86,7 @@ class Satellite(QtGui.QGraphicsRectItem):
                     tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
                     print self.sat.name,'tr',tr,'tt',tt,'ts',ts
 
-                self.passList.append((tr, azr, tt, altt, ts, azs))
+                self.passList.append((tr, azr, tt, altt, ts, azs, obs.lat, obs.lon, obs.elev))
                 obs.date = ts + 10.0 * ephem.minute
             else:
                 obs.date = ephem.now() + 10.0

@@ -496,7 +496,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         
 
 if __name__ == '__main__':
-    app = QtGui.QApplication(['GroundStation'])
+    app = QtGui.QApplication(['GroundStation Version 1.0'])
     window = OrbitWidgetApp()
     window.show()
     app.exec_()
