@@ -22,6 +22,7 @@
 from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import QtOpenGL
+from subprocess import Popen, call, PIPE
 import ephem
 import math
 import datetime
@@ -187,7 +188,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.tle = tle
         self.parent = parent
         self.args = (self.name,
-                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'22050.dat',
+                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050.dat',
                      self.freq, self.tle[0], self.tle[1],
                      math.degrees(self.lat), math.degrees(self.lon), self.alt,
                      self.start_time.datetime())

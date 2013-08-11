@@ -267,7 +267,7 @@ class ChannelAudio(gr.hier_block2):
         gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" Audio",
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
                                 gr.io_signature(0, 0, 0))
-        
+        print 'AF', audio_fname
         self.sample_rate = sample_rate = 32000
         self.rec_gain = rec_gain
         self.af_gain = af_gain
@@ -408,7 +408,7 @@ class Base_RX(grc_wxgui.top_block_gui):
     
     def del_channel(self, idx):
         self.disconnect(self.active_channels[idx][1])
-        self.active_channel[idx] = None
+        self.active_channels[idx] = None
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
     def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
@@ -435,7 +435,8 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         self.demod = ChannelDemodSSB(self.GetWin(), sat_name)
         self.Add(self.demod.fftsink_audio.win)
         if audio:
-            self.audio = ChannelAudio(sat_name, audio_fname, pipe_fname)
+            print 'Just before ChanAud', audio_fname
+            self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
         else:
             self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
 
