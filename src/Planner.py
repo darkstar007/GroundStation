@@ -154,7 +154,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         brush = QtGui.QBrush()
         
         brush.setStyle(QtCore.Qt.SolidPattern)
-        brush.setColor(QtGui.QColor(240, 40, 40, 100))
+        brush.setColor(QtGui.QColor(240, 40, 40, 200))
 
         self.setBrush(brush)
         self.name = name
@@ -166,15 +166,21 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.chan_timer.timeout.connect(self.startChannel)
         self.chan_timer.setSingleShot(True)
         self.chan_timer.start(self.when_ms(self.start_time))
+        self.decoder_options = []
         if self.mode == '1k2_AFSK':
             self.type = GnuRadio2.FM_RX_Channel
+            self.decoder_options.append('-A')
         elif self.mode == 'CW':
             self.type = GnuRadio2.SSB_RX_Channel
         elif self.mode == 'APRS':
             self.type = GnuRadio2.FM_RX_Channel
+            self.decoder_options.append('-a')
+            self.decoder_options.append('AFSK1200')
+
         else:
             self.type = GnuRadio2.SSB_RX_Channel
 
+            
         self.lat = params[6]
         self.lon = params[7]
         self.alt = params[8]
@@ -187,12 +193,19 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
                      self.start_time.datetime())
                      
         self.kwords = {'filename_raw':'/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_raw.dat'}
+        if len(self.decoder_options) > 0:
+            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_pipe'
+        self.decoder = None
         
     def startChannel(self):
         self.parent.startChannel(self)
-
+        self.decoder = Popen(['multimon-ng', '-t', 'raw'] + decoder_options + [pname], bufsize=-1)
+        
     def stopChannel(self):
         print 'shoot me!!'
+        if self.decoder is not None:
+            self.decoder.terminate()
+            
         self.parent.stopChannel(self.RXidx)
         
     def setRXidx(self, idx):

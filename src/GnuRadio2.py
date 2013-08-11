@@ -407,8 +407,8 @@ class Base_RX(grc_wxgui.top_block_gui):
     
     
     def del_channel(self, idx):
-        self.disconnect(self.active_channel[idx][1])
-        del self.active_channel[idx]
+        self.disconnect(self.active_channels[idx][1])
+        self.active_channel[idx] = None
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
     def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
