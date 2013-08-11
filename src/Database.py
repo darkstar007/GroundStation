@@ -205,7 +205,8 @@ class Database():
             return (res[0][0])
 
     def getTLE(self, name):
-        self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name', (name,))
+        self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name',
+                          (name,))
         res = self.curs.fetchall()
         if len(res) == 0:
             return (('', ''))
@@ -301,7 +302,7 @@ class Database():
             for x in xrange(len(lines) / 3):
                 m = ephem.readtle(lines[x*3], lines[x*3+1], lines[x*3+2])
                 self.curs.execute("INSERT INTO ephemeris(fname, line1, line2, line3, epoch, ts)  VALUES(?, ?, ?, ?, ?, datetime('now'))",
-                                  (fname, lines[x*3], lines[x*3+1], lines[x*3+2], m._epoch.datetime()))
+                                  (fname, lines[x*3].strip(), lines[x*3+1].strip(), lines[x*3+2].strip(), m._epoch.datetime()))
             self.conn.commit()
         else:
             print 'Just using existing data for ',fname

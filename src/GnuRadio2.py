@@ -378,6 +378,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         #threading.Thread(target=run_channel, args=(channel, args,kwords)).start()
         Process(target=run_channel, args=(channel, args, kwords)).start()
         print 'made newchan'
+        time.sleep(1.0)
         print 'lock'
         newport = grc_blks2.tcp_sink(
             itemsize=gr.sizeof_gr_complex*1,
