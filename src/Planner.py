@@ -200,7 +200,9 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         
     def startChannel(self):
         self.parent.startChannel(self)
-        self.decoder = Popen(['multimon-ng', '-t', 'raw'] + decoder_options + [pname], bufsize=-1)
+        if len(self.decoder_options) > 0:
+            self.decoder = Popen(['multimon-ng', '-t', 'raw'] + self.decoder_options + [self.kwords['pipe_fname']],
+                                 bufsize=-1)
         
     def stopChannel(self):
         print 'shoot me!!'

@@ -267,7 +267,6 @@ class ChannelAudio(gr.hier_block2):
         gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" Audio",
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
                                 gr.io_signature(0, 0, 0))
-        print 'AF', audio_fname
         self.sample_rate = sample_rate = 32000
         self.rec_gain = rec_gain
         self.af_gain = af_gain
@@ -275,11 +274,9 @@ class ChannelAudio(gr.hier_block2):
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((af_gain, ))
         self.blocks_float_to_short_0 = blocks.float_to_short(1, rec_gain)
 
-        print 'Audio fname', audio_fname
         self.blocks_file_sink_file = blocks.file_sink(gr.sizeof_short*1, str(audio_fname))
         self.blocks_file_sink_file.set_unbuffered(False)
 
-        print 'pipe_fname', pipe_fname
         if pipe_fname is not None:
             self.blocks_file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
             self.blocks_file_sink_pipe.set_unbuffered(False)
@@ -350,7 +347,6 @@ class ReceiverStage1(gr.hier_block2):
             )
         self.gr_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
-        print 'RecStage1', filename_raw
         if filename_raw is not None:
             self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
             self.file_sink_raw.set_unbuffered(False)
@@ -419,8 +415,6 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
-        print 'SSB_chan audio_fname=', audio_fname
-
         self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
@@ -435,7 +429,6 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         self.demod = ChannelDemodSSB(self.GetWin(), sat_name)
         self.Add(self.demod.fftsink_audio.win)
         if audio:
-            print 'Just before ChanAud', audio_fname
             self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
         else:
             self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
@@ -454,8 +447,6 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
-        print 'FM_chan audio_fname=', audio_fname
-        
         self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
