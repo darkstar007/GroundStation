@@ -24,14 +24,22 @@ import sys
 import cjson
 
 print sys.argv
-args = cjson.decode(sys.argv[2])
+args_orig = cjson.decode(sys.argv[2])
 kwords = cjson.decode(sys.argv[3])
-print args, kwords
+print args_orig, kwords
+
+args=[]
+for a in args_orig:
+    if isinstance(a, str):
+        args.append(a.replace('\\', ''))
+    else:
+        args.append(a)
+
 for a in kwords.keys():
     if isinstance(kwords[a], str):
         kwords[a] = kwords[a].replace('\\', '')
 
-print kwords
+print args,kwords
 
 if sys.argv[1] == 'SSB_RX_Channel':
     chan = SSB_RX_Channel(*args, **kwords)

@@ -47,27 +47,27 @@ import datetime
 
 
 class Receiver(gr.top_block):
-    def __init__(self, frequency, sample_rate = 1.536e6, rf_gain = 0, port=7890):
+    def __init__(self, frequency, sample_rate = 1.536e6, rf_gain = 45, port=7890, freq_corr=0.0):
         gr.top_block.__init__(self, "Groundstation_receiver")
         self.sample_rate = sample_rate
         self.rf_gain = rf_gain
         self.freq = frequency
         self.port = port
         
-        self.osmosdr_source_c_0 = osmosdr.source_c( args="nchan=" + str(1) + " " + ""  )
-        self.osmosdr_source_c_0.set_sample_rate(self.sample_rate)
-        self.osmosdr_source_c_0.set_center_freq(self.freq, 0)
-        self.osmosdr_source_c_0.set_freq_corr(0, 0)
-        self.osmosdr_source_c_0.set_gain_mode(0, 0)
-        self.osmosdr_source_c_0.set_gain(rf_gain, 0)
-        self.blks2_tcp_sink_0 = grc_blks2.tcp_sink(
+        self.osmosdr_source = osmosdr.source_c( args="nchan=" + str(1) + " " + ""  )
+        self.osmosdr_source.set_sample_rate(self.sample_rate)
+        self.osmosdr_source.set_center_freq(self.freq, 0)
+        self.osmosdr_source.set_freq_corr(freq_corr, 0)
+        self.osmosdr_source.set_gain_mode(0, 0)
+        self.osmosdr_source.set_gain(rf_gain, 0)
+        self.blks2_tcp_sink = grc_blks2.tcp_sink(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
             port=self.port,
             server=True,
             )
 
-        self.connect((self.osmosdr_source_c_0, 0), (self.blks2_tcp_sink_0, 0))
+        self.connect((self.osmosdr_source, 0), (self.blks2_tcp_sink, 0))
 
 class ReceiverTest(gr.top_block):
     def __init__(self, frequency, sample_rate = 1.536e6, rf_gain = 0, port=7890):
@@ -271,41 +271,48 @@ class ChannelAudio(gr.hier_block2):
         self.sample_rate = sample_rate = 32000
         self.rec_gain = rec_gain
         self.af_gain = af_gain
-
+        
         self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((af_gain, ))
         self.blocks_float_to_short_0 = blocks.float_to_short(1, rec_gain)
+
+        print 'Audio fname', audio_fname
         self.blocks_file_sink_file = blocks.file_sink(gr.sizeof_short*1, str(audio_fname))
         self.blocks_file_sink_file.set_unbuffered(False)
+
+        print 'pipe_fname', pipe_fname
         if pipe_fname is not None:
             self.blocks_file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
             self.blocks_file_sink_pipe.set_unbuffered(False)
 
-        self.blks2_rational_resampler_xxx_1_0_0 = blks2.rational_resampler_fff(
+        self.blks2_rational_resampler_48k = blks2.rational_resampler_fff(
             interpolation=48,
             decimation=32,
             taps=None,
             fractional_bw=None,
             )
-        self.blks2_rational_resampler_xxx_1_0 = blks2.rational_resampler_fff(
+        self.blks2_rational_resampler_22050 = blks2.rational_resampler_fff(
             interpolation=2205,
             decimation=sample_rate/10,
             taps=None,
             fractional_bw=None,
             )
-        self.audio_sink_0 = audio.sink(48000, "pulse", True)
+        
+        self.audio_sink = audio.sink(48000, "pulse", True)
 
         ##################################################
         # Connections
         ##################################################
 
-        self.connect(self, (self.blks2_rational_resampler_xxx_1_0, 0))
-        self.connect(self, (self.blks2_rational_resampler_xxx_1_0_0, 0))
-        self.connect((self.blks2_rational_resampler_xxx_1_0_0, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink_0, 0))
-        self.connect((self.blks2_rational_resampler_xxx_1_0, 0), (self.blocks_float_to_short_0, 0))
+        self.connect(self, (self.blks2_rational_resampler_22050, 0))
+        self.connect(self, (self.blks2_rational_resampler_48k, 0))
+        
+        self.connect((self.blks2_rational_resampler_48k, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink, 0))
+        
+        self.connect((self.blks2_rational_resampler_22050, 0), (self.blocks_float_to_short_0, 0))
+        self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_file, 0))
         if pipe_fname is not None:
             self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_pipe, 0))
-        self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_file, 0))
 
 
 class ReceiverStage1(gr.hier_block2):
@@ -343,6 +350,7 @@ class ReceiverStage1(gr.hier_block2):
             )
         self.gr_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
+        print 'RecStage1', filename_raw
         if filename_raw is not None:
             self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
             self.file_sink_raw.set_unbuffered(False)
@@ -399,7 +407,7 @@ class Base_RX(grc_wxgui.top_block_gui):
     
     
     def del_channel(self, idx):
-        self.disconnect(self.active_channel[idx])
+        self.disconnect(self.active_channel[idx][1])
         del self.active_channel[idx]
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
@@ -410,6 +418,8 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         grc_wxgui.top_block_gui.__init__(self, title = "SSB Channel "+sat_name)
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
+
+        print 'SSB_chan audio_fname=', audio_fname
 
         self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
@@ -443,6 +453,8 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
+        print 'FM_chan audio_fname=', audio_fname
+        
         self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
@@ -468,7 +480,8 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
 
 
 def run_capture(freq):
-    cpt = ReceiverTest(freq)
+    cpt = Receiver(freq)
+    #cpt = ReceiverTest(freq)
     print 'Starting cpt 1'
     cpt.run()
     print 'Finished (cpt)'
@@ -533,7 +546,7 @@ def orig():
 
 def latest():
     print 'Starting capture'
-    threading.Thread(target=run_capture, args=(1.0,)).start()
+    threading.Thread(target=run_capture, args=(436994178.0,)).start()
 
     print 'Starting the base receiver' 
     rx = Base_RX(None, 1536000)
@@ -591,7 +604,7 @@ def latest():
 
 def latest2():
     print 'Starting capture'
-    threading.Thread(target=run_capture, args=(1.0,)).start()
+    threading.Thread(target=run_capture, args=(436.795e6,)).start()
 
     print 'Starting the base receiver' 
     rx = Base_RX(None, 1536000)

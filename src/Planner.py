@@ -83,11 +83,13 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = True
 
     def runCapture(self):
-        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw)
+        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=-30.0e3/437.0)
         print 'Starting cpt 1'
         self.cpt.run()
         print 'Finished (cpt)'
-
+        self.cpt.stop()
+        self.cpt = None
+        
     def runRX(self):
         self.baseRX.Run()
 
@@ -97,7 +99,13 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         kwords['frequency_offset'] = chan.freq - self.freq
         print 'kwords',kwords
         print 'c.k', chan.kwords
-        self.baseRX.add_channel(chan.type, chan.args, kwords)
+        idx = self.baseRX.add_channel(chan.type, chan.args, kwords)
+        chan.setRXidx(idx)
+
+    def stopChannel(self, idx):
+        print 'Doing del chan'
+        self.baseRX.del_channel(idx)
+        print 'Done del channel'
         
     def startReceiver(self):
         print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
@@ -122,7 +130,8 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         
     def addChannel(self, name, mode, freq, tle, params):
         print 'Adding', name
-        self.channels.append(PlannerChannel(self, name, mode, freq, tle, params))
+        if params[0] > self.start_time:
+            self.channels.append(PlannerChannel(self, name, mode, freq, tle, params))
         
     def update(self, fx0, scale_x, scale_y, off_x, off_y):
         if self.ready:
@@ -156,7 +165,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.chan_timer = QtCore.QTimer()
         self.chan_timer.timeout.connect(self.startChannel)
         self.chan_timer.setSingleShot(True)
-        self.chan_timer.start(self.when_ms())
+        self.chan_timer.start(self.when_ms(self.start_time))
         if self.mode == '1k2_AFSK':
             self.type = GnuRadio2.FM_RX_Channel
         elif self.mode == 'CW':
@@ -171,21 +180,31 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.alt = params[8]
         self.tle = tle
         self.parent = parent
-        print 'tle', self.tle
         self.args = (self.name,
-                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
+                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'22050.dat',
                      self.freq, self.tle[0], self.tle[1],
                      math.degrees(self.lat), math.degrees(self.lon), self.alt,
                      self.start_time.datetime())
                      
-        self.kwords = {}
+        self.kwords = {'filename_raw':'/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_raw.dat'}
         
     def startChannel(self):
         self.parent.startChannel(self)
+
+    def stopChannel(self):
+        print 'shoot me!!'
+        self.parent.stopChannel(self.RXidx)
         
+    def setRXidx(self, idx):
+        self.RXidx = idx
+        self.end_timer = QtCore.QTimer()
+        self.end_timer.timeout.connect(self.stopChannel)
+        self.end_timer.setSingleShot(True)
+        self.end_timer.start(self.when_ms(self.stop_time))
+
     # return the number of millisecs till we need to start
-    def when_ms(self):
-        return ((self.start_time - ephem.now()) * 24.0 * 60.0 * 60.0 * 1000.0)
+    def when_ms(self, tim):
+        return ((tim - ephem.now()) * 24.0 * 60.0 * 60.0 * 1000.0)
     
     def update(self, fx0, scale_x, scale_y, off_x, off_y):
         y = ((self.start_time - ephem.now()) * 24.0 * 60.0) * scale_y + off_y
