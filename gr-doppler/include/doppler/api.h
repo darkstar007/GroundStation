@@ -22,7 +22,7 @@
 #ifndef INCLUDED_DOPPLER_API_H
 #define INCLUDED_DOPPLER_API_H
 
-#include <gruel/attributes.h>
+#include <gnuradio/attributes.h>
 
 #ifdef gnuradio_doppler_EXPORTS
 #  define DOPPLER_API __GR_ATTR_EXPORT

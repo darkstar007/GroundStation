@@ -23,9 +23,8 @@ from gnuradio import audio
 from gnuradio import eng_notation
 from gnuradio import gr
 from gnuradio import blocks
-from gnuradio import blks2
 from gnuradio.eng_option import eng_option
-from gnuradio.gr import firdes
+#from gnuradio.gr import firdes
 from grc_gnuradio import blks2 as grc_blks2
 from grc_gnuradio import wxgui as grc_wxgui
 from gnuradio.wxgui import fftsink2

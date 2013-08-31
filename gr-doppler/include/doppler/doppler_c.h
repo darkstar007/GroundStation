@@ -23,7 +23,7 @@
 #define INCLUDED_DOPPLER_DOPPLER_C_H
 
 #include <doppler/api.h>
-#include <gr_sync_block.h>
+#include <gnuradio/sync_block.h>
 
 namespace gr {
   namespace doppler {
@@ -33,7 +33,7 @@ namespace gr {
      * \ingroup doppler
      *
      */
-    class DOPPLER_API doppler_c : virtual public gr_sync_block
+       class DOPPLER_API doppler_c : virtual public gr::sync_block
     {
      public:
       typedef boost::shared_ptr<doppler_c> sptr;
