@@ -35,26 +35,26 @@ class Database():
         self.curs = self.conn.cursor()
 
         try:
-            self.conn.execute('CREATE TABLE modes (name text, mode int unique)')
+            self.conn.execute('CREATE TABLE modes (name text, mode int unique, bandwidth real, class text)')
             mode_data = [
-                ('Other', -1),
-                ('1k2_AFSK', 0),
-                ('1k2_FSK', 1),
-                ('CW', 2),
-                ('4k8_GMSK', 3),
-                ('9k6_GMSK', 4),
-                ('9k6_FSK', 5),
-                ('1k2_BPSK', 6),
-                ('CW(FM)', 7),
-                ('19k2_GFSK', 8),
-                ('APRS', 9),
-                ('0k625_GFSK', 10),
-                ('APT', 11),
-                ('WBFM', 12),
-                ('9k6_MSK', 13),
+                ('Other',      -1,    -1.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('1k2_AFSK',    0,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('1k2_FSK',     1,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('CW',          2,   600.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('4k8_GMSK',    3,  5000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('9k6_GMSK',    4,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('9k6_FSK',     5,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('1k2_BPSK',    6,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('CW(FM)',      7,   600.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('19k2_GFSK',   8,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('APRS',        9,  3000.0, 'GnuRadio2.FM_RX_Channel'),
+                ('0k625_GFSK', 10,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('APT',        11,  3000.0, 'GnuRadio2.FM_RX_Channel'),
+                ('WBFM',       12,  3000.0, 'GnuRadio2.FM_RX_Channel'),
+                ('9k6_MSK',    13,  5000.0, 'GnuRadio2.SSB_RX_Channel'),
                 ]
             
-            self.conn.executemany('INSERT INTO modes VALUES (?, ?)', mode_data)
+            self.conn.executemany('INSERT INTO modes VALUES (?, ?, ?, ?)', mode_data)
             self.conn.execute('CREATE INDEX mode_idx ON modes(mode)')
             self.conn.commit()
         except Exception, e:

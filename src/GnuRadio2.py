@@ -22,9 +22,8 @@
 from gnuradio import audio
 from gnuradio import eng_notation
 from gnuradio import gr
-from gnuradio import blocks
+from gnuradio import blocks, analog, filter 
 from gnuradio.eng_option import eng_option
-#from gnuradio.gr import firdes
 from grc_gnuradio import blks2 as grc_blks2
 from grc_gnuradio import wxgui as grc_wxgui
 from gnuradio.wxgui import fftsink2
@@ -53,7 +52,7 @@ class Receiver(gr.top_block):
         self.freq = frequency
         self.port = port
         
-        self.osmosdr_source = osmosdr.source_c( args="nchan=" + str(1) + " " + ""  )
+        self.osmosdr_source = osmosdr.source( args="nchan=" + str(1) + " " + ""  )
         self.osmosdr_source.set_sample_rate(self.sample_rate)
         self.osmosdr_source.set_center_freq(self.freq, 0)
         self.osmosdr_source.set_freq_corr(freq_corr, 0)
@@ -113,7 +112,7 @@ class ChannelDownsample(gr.hier_block2):
                                      lat, lon, alt/1000.0,
                                      when.year, when.month, when.day, when.hour, when.minute,
                                      when.second, when.microsecond)
-        self.mult2 = gr.multiply_vcc(1)
+        self.mult2 = blocks.multiply_vcc(1)
         
         self.wxgui_fftsink0 = fftsink2.fft_sink_c(
             win,
@@ -131,12 +130,13 @@ class ChannelDownsample(gr.hier_block2):
             peak_hold=True,
             )
 
-        self.low_pass_filter = gr.fir_filter_ccf(self.decim,
-                                                 firdes.low_pass(1, sample_rate, 120000, 5000, firdes.WIN_HAMMING, 6.76))
-        self.sig_source = gr.sig_source_c(sample_rate, gr.GR_COS_WAVE, -(self.freq_offset), 1, 0)
-        self.mult1 = gr.multiply_vcc(1)
+        self.low_pass_filter = filter.fir_filter_ccf(self.decim,
+                                                     filter.firdes.low_pass(1, sample_rate, 120000, 5000,
+                                                                            filter.firdes.WIN_HAMMING, 6.76))
+        self.sig_source = analog.sig_source_c(sample_rate, analog.GR_COS_WAVE, -(self.freq_offset), 1, 0)
+        self.mult1 = blocks.multiply_vcc(1)
 
-        self.file_sink_raw = gr.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
+        self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
         self.file_sink_raw.set_unbuffered(False)
 
         self.connect(self, (self.mult1, 0))
@@ -159,11 +159,11 @@ class ChannelDemodFM(gr.hier_block2):
         self.mode = mode = 1
         self.decim = decim = 6
 
-        self.low_pass_filter = gr.fir_filter_ccf(4, firdes.low_pass(
-            1, samp_rate/decim, 10000, trans_fm, firdes.WIN_HAMMING, 6.76))
+        self.low_pass_filter = filter.fir_filter_ccf(4, filter.firdes.low_pass(
+            1, samp_rate/decim, 10000, trans_fm, filter.firdes.WIN_HAMMING, 6.76))
 
         if nbfm:
-            self.fm_demod = blks2.fm_demod_cf(
+            self.fm_demod = analog.fm_demod_cf(
                 channel_rate=64000,
                 audio_decim=2,
                 deviation=5000,
@@ -173,7 +173,7 @@ class ChannelDemodFM(gr.hier_block2):
                 tau=75e-6,
                 )
         else:
-            self.fm_demod = blks2.fm_demod_cf(
+            self.fm_demod = analog.fm_demod_cf(
                 channel_rate=64000,
                 audio_decim=2,
                 deviation=45000,
@@ -236,17 +236,17 @@ class ChannelDemodSSB(gr.hier_block2):
             )
 
         self.gr_multiply_const_vxx_1_0 = blocks.multiply_const_vff((64, ))
-        self.gr_complex_to_real_0 = gr.complex_to_real(1)
+        self.gr_complex_to_real_0 = blocks.complex_to_real(1)
 
-        self.blks2_rational_resampler_xxx_1 = blks2.rational_resampler_ccc(
+        self.blks2_rational_resampler_xxx_1 = filter.rational_resampler_ccc(
             interpolation=32,
             decimation=64,
             taps=None,
             fractional_bw=None,
             )
-        self.band_pass_filter = gr.fir_filter_ccc(4, firdes.complex_band_pass(
-            1, sample_rate/decim, low_ssb, high_ssb, trans, firdes.WIN_HAMMING, 6.76))
-        self.agc = gr.agc2_cc(0.1, agc_decay, 0.9, 1.0, 1.0)
+        self.band_pass_filter = filter.fir_filter_ccc(4, filter.firdes.complex_band_pass(
+            1, sample_rate/decim, low_ssb, high_ssb, trans, filter.firdes.WIN_HAMMING, 6.76))
+        self.agc = analog.agc2_cc(0.1, agc_decay, 0.9, 1.0)
         
         ##################################################
         # Connections
@@ -280,13 +280,13 @@ class ChannelAudio(gr.hier_block2):
             self.blocks_file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
             self.blocks_file_sink_pipe.set_unbuffered(False)
 
-        self.blks2_rational_resampler_48k = blks2.rational_resampler_fff(
+        self.rational_resampler_48k = filter.rational_resampler_fff(
             interpolation=48,
             decimation=32,
             taps=None,
             fractional_bw=None,
             )
-        self.blks2_rational_resampler_22050 = blks2.rational_resampler_fff(
+        self.rational_resampler_22050 = filter.rational_resampler_fff(
             interpolation=2205,
             decimation=sample_rate/10,
             taps=None,
@@ -299,13 +299,13 @@ class ChannelAudio(gr.hier_block2):
         # Connections
         ##################################################
 
-        self.connect(self, (self.blks2_rational_resampler_22050, 0))
-        self.connect(self, (self.blks2_rational_resampler_48k, 0))
+        self.connect(self, (self.rational_resampler_22050, 0))
+        self.connect(self, (self.rational_resampler_48k, 0))
         
-        self.connect((self.blks2_rational_resampler_48k, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.rational_resampler_48k, 0), (self.blocks_multiply_const_vxx_0, 0))
         self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink, 0))
         
-        self.connect((self.blks2_rational_resampler_22050, 0), (self.blocks_float_to_short_0, 0))
+        self.connect((self.rational_resampler_22050, 0), (self.blocks_float_to_short_0, 0))
         self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_file, 0))
         if pipe_fname is not None:
             self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_pipe, 0))
@@ -381,8 +381,9 @@ class Base_RX(grc_wxgui.top_block_gui):
         #threading.Thread(target=run_channel, args=(channel, args,kwords)).start()
         Process(target=run_channel, args=(channel, args, kwords)).start()
         print 'made newchan'
-        time.sleep(1.0)
+        #time.sleep(1.0)
         print 'lock'
+        print 'Adding sink to port', self.port, 'in Base_Rx.add_channel'
         newport = grc_blks2.tcp_sink(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
@@ -414,6 +415,7 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
+        print 'Trying to connect source to port', port, 'in SSB_RX_Chan'
         self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
@@ -471,8 +473,8 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
 
 
 def run_capture(freq):
-    cpt = Receiver(freq)
-    #cpt = ReceiverTest(freq)
+    #cpt = Receiver(freq)
+    cpt = ReceiverTest(freq)
     print 'Starting cpt 1'
     cpt.run()
     print 'Finished (cpt)'

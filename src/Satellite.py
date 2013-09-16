@@ -77,19 +77,25 @@ class Satellite(QtGui.QGraphicsRectItem):
     def updatePassList(self, obs):
         print 'Updating pass list'
         self.passList = []
-        while (obs.date - ephem.now()) < 2.0:
-            tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
-            if ts is not None:
-                if tr > tt or tr > ts:    # If sat is visible in the sky, then we get weird number out!
-                    print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'original'
-                    self.parent.observer.date = obs.date - 45.0 * ephem.minute # lets rewind time by half an orbit
-                    tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
-                    print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'fixed'
-
-                self.passList.append((tr, azr, tt, altt, ts, azs, obs.lat, obs.lon, obs.elev))
-                obs.date = ts + 10.0 * ephem.minute
-            else:
-                obs.date = ons.date + 10.0
+        try:
+            while (obs.date - ephem.now()) < 2.0:
+                tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
+                if ts is not None:
+                    if tr > tt or tr > ts:    # If sat is visible in the sky, then we get weird number out!
+                        original_ts = ts
+                        print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'original'
+                        self.parent.observer.date = obs.date - 45.0 * ephem.minute # lets rewind time by half an orbit
+                        tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
+                        print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'fixed'
+                        if ts < (original_ts - ephem.minute):   # I'm seeing the odd really weird output
+                            raise Exception("bad prediction")
+                    self.passList.append((tr, azr, tt, altt, ts, azs, obs.lat, obs.lon, obs.elev))
+                    obs.date = ts + 10.0 * ephem.minute
+                else:
+                    obs.date = ons.date + 10.0
+        except Exception, e:
+            print e
+            
         diff = len(self.passList) - len(self.passListPlan)
         if diff > 0:
             for x in range(diff):
