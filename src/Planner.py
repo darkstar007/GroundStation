@@ -23,6 +23,9 @@ from PyQt4 import QtGui
 from PyQt4 import QtCore
 from PyQt4 import QtOpenGL
 from subprocess import Popen, call, PIPE
+from threading import Thread
+from multiprocessing import Process
+
 import ephem
 import math
 import datetime
@@ -30,7 +33,7 @@ import threading
 import GnuRadio2
 import atexit
 import os
-
+import time
 
 class PlannerSat(QtGui.QGraphicsRectItem):
     def __init__(self, x, y, w, h, sat):   #, marker_id, pen, brush, font, db, parent):
@@ -93,9 +96,10 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.cpt.stop()
         self.cpt = None
         
-    def runRX(self):
-        self.baseRX.Run()
-
+        #def runRX(self):
+        
+        #print 'Finixhed baseRX.run()'
+        
     def startChannel(self, chan):
         print 'We should be starting channel', chan.name, chan.mode
         kwords = chan.kwords.copy()
@@ -113,12 +117,15 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
     def startReceiver(self):
         print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
         self.timer.stop()
-        self.cpt_thread = threading.Thread(target=self.runCapture)
+        self.cpt_thread = Thread(target=self.runCapture)
         self.cpt_thread.start()
+        #time.sleep(1.0)
         self.baseRX = GnuRadio2.Base_RX('/data/matt/mygnuradio/GroundStation_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat',
                                         self.rx_bw)
-        self.baseRX_thread = threading.Thread(target=self.runRX)
-        self.baseRX_thread.start()
+        #self.baseRX_thread = Thread(target=self.runRX)
+        #self.baseRX_thread.start()
+        self.baseRX.Start()
+        #self.runRX()
         
         self.timer2 = QtCore.QTimer()
         self.timer2.timeout.connect(self.stopReceiver)
@@ -128,7 +135,11 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
     def stopReceiver(self):
         print '******* Stopping.....', self.freq
         self.baseRX.stop()
+        self.baseRX.GetWin().Parent.Destroy()
         self.cpt.stop()
+        print '****stopped......'
+        #self.baseRX_thread.terminate()
+        #self.cpt_thread.terminate()
         self.hide()
         
     def addChannel(self, name, mode, freq, tle, params):

@@ -377,14 +377,14 @@ class Base_RX(grc_wxgui.top_block_gui):
     def add_channel(self, channel, args, kwords):
         #self.stop()
         #self.wait()
+
+        print 'lock'
         self.lock()
         kwords['port'] = self.port
-        #threading.Thread(target=run_channel, args=(channel, args,kwords)).start()
-        p = Process(target=run_channel, args=(channel, args, kwords))
-        p.start()
+
+        p = self.run_channel(channel, args, kwords)
         print 'made newchan'
-        time.sleep(1.0)
-        print 'lock'
+        #time.sleep(1.0)
         print 'Adding sink to port', self.port, 'in Base_Rx.add_channel'
         newport = grc_blks2.tcp_sink(
             itemsize=gr.sizeof_gr_complex*1,
@@ -403,16 +403,30 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.unlock()
         self.port +=1
         return idx
-    
+
+    def run_channel(self, channel, args, kwords):
+        print 'make chan'
+        tmp = []
+        for x in args:
+            if isinstance(x, datetime.datetime):
+                tmp2 = {'year':x.year, 'month':x.month, 'day':x.day,
+                        'hour':x.hour, 'minute':x.minute, 'second':x.second, 'microsecond':x.microsecond}
+                tmp.append(tmp2)
+            else:
+                tmp.append(x)
+        proc = Popen(['python', 'run_channel.py', str(channel.__name__), cjson.encode(tmp), cjson.encode(kwords)], bufsize=-1)
+        print 'run chan', proc.pid
+        #newchan.Run()
+        print 'completed chan'
+        return proc
     
     def del_channel(self, idx):
         print 'Disconnecting channel'
         self.lock()
-        self.disconnect(self.front, self.active_channels[idx]['gr_tcp'])
+        self.disconnect(self.active_channels[idx]['gr_tcp'])
         self.unlock()
         print 'Terminating'
         self.active_channels[idx]['Process'].terminate()
-        print 'Still running?', self.active_channels[idx]['Process'].pid, self.active_channels[idx]['Process'].is_alive()
         print 'setting',idx,'to none'
         self.active_channels[idx] = None
         
@@ -491,22 +505,6 @@ def run_capture(freq):
 
 def run_rx(rx):
     rx.Run()
-
-def run_channel(channel, args, kwords):
-    print 'make chan'
-    tmp = []
-    for x in args:
-        if isinstance(x, datetime.datetime):
-            tmp2 = {'year':x.year, 'month':x.month, 'day':x.day,
-                    'hour':x.hour, 'minute':x.minute, 'second':x.second, 'microsecond':x.microsecond}
-            tmp.append(tmp2)
-        else:
-            tmp.append(x)
-    proc = Popen(['python', 'run_channel.py', str(channel.__name__), cjson.encode(tmp), cjson.encode(kwords)], bufsize=-1)
-    print 'run chan'
-    #newchan.Run()
-    print 'completed chan'
-
 
 def orig():
     print 'Starting capture'
