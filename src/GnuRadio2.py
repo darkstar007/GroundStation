@@ -235,10 +235,10 @@ class ChannelDemodSSB(gr.hier_block2):
             peak_hold=True,
             )
 
-        self.gr_multiply_const_vxx_1_0 = blocks.multiply_const_vff((64, ))
-        self.gr_complex_to_real_0 = blocks.complex_to_real(1)
+        self.multiply_const_64 = blocks.multiply_const_vff((0.1, ))
+        self.complex_to_real = blocks.complex_to_real(1)
 
-        self.blks2_rational_resampler_xxx_1 = filter.rational_resampler_ccc(
+        self.rational_resampler = filter.rational_resampler_ccc(
             interpolation=32,
             decimation=64,
             taps=None,
@@ -255,11 +255,11 @@ class ChannelDemodSSB(gr.hier_block2):
 
         self.connect(self, (self.band_pass_filter, 0))
         self.connect((self.band_pass_filter, 0), (self.agc, 0))
-        self.connect((self.agc, 0), (self.blks2_rational_resampler_xxx_1, 0))
-        self.connect((self.blks2_rational_resampler_xxx_1, 0), (self.gr_complex_to_real_0, 0))
-        self.connect((self.gr_complex_to_real_0, 0), (self.gr_multiply_const_vxx_1_0, 0))
-        self.connect((self.gr_multiply_const_vxx_1_0, 0), (self.fftsink_audio, 0))
-        self.connect((self.gr_multiply_const_vxx_1_0, 0), self)
+        self.connect((self.agc, 0), (self.rational_resampler, 0))
+        self.connect((self.rational_resampler, 0), (self.complex_to_real, 0))
+        self.connect((self.complex_to_real, 0), (self.multiply_const_64, 0))
+        self.connect((self.multiply_const_64, 0), (self.fftsink_audio, 0))
+        self.connect((self.multiply_const_64, 0), self)
 
 class ChannelAudio(gr.hier_block2):
     def __init__(self, win, sat_name, audio_fname, pipe_fname = None, rec_gain = 50000, af_gain = 0.1):
@@ -322,7 +322,7 @@ class ReceiverStage1(gr.hier_block2):
         self.decim = 6
 
     
-        self.wxgui_fftsink2_1 = fftsink2.fft_sink_c(
+        self.wxgui_fftsink = fftsink2.fft_sink_c(
             win,
             baseband_freq=0,
             y_per_div=5,
@@ -338,13 +338,13 @@ class ReceiverStage1(gr.hier_block2):
             peak_hold=True,
             )
 
-        self.blks2_tcp_source_0 = grc_blks2.tcp_source(
+        self.tcp_source = grc_blks2.tcp_source(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",
             port=7890,
             server=False,
             )
-        self.gr_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
+        self.throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
         if filename_raw is not None:
             self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
@@ -353,11 +353,11 @@ class ReceiverStage1(gr.hier_block2):
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.blks2_tcp_source_0, 0), (self.gr_throttle_0, 0))
-        self.connect((self.gr_throttle_0, 0), (self.wxgui_fftsink2_1, 0))
+        self.connect((self.tcp_source, 0), (self.throttle, 0))
+        self.connect((self.throttle, 0), (self.wxgui_fftsink, 0))
         if filename_raw is not None:
-            self.connect((self.gr_throttle_0, 0), (self.file_sink_raw, 0))
-        self.connect((self.gr_throttle_0, 0), self)
+            self.connect((self.throttle, 0), (self.file_sink_raw, 0))
+        self.connect((self.throttle, 0), self)
 
 
 class Base_RX(grc_wxgui.top_block_gui):
@@ -367,7 +367,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
         self.front = ReceiverStage1(self.GetWin(), filename_raw, sample_rate)
-        self.Add(self.front.wxgui_fftsink2_1.win)
+        self.Add(self.front.wxgui_fftsink.win)
         self.default_sink = blocks.null_sink(gr.sizeof_gr_complex*1)
 
         self.connect((self.front,0), (self.default_sink, 0))
@@ -375,13 +375,15 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.port = 9010
         
     def add_channel(self, channel, args, kwords):
-        self.stop()
-        self.wait()
+        #self.stop()
+        #self.wait()
+        self.lock()
         kwords['port'] = self.port
         #threading.Thread(target=run_channel, args=(channel, args,kwords)).start()
-        Process(target=run_channel, args=(channel, args, kwords)).start()
+        p = Process(target=run_channel, args=(channel, args, kwords))
+        p.start()
         print 'made newchan'
-        #time.sleep(1.0)
+        time.sleep(1.0)
         print 'lock'
         print 'Adding sink to port', self.port, 'in Base_Rx.add_channel'
         newport = grc_blks2.tcp_sink(
@@ -391,19 +393,27 @@ class Base_RX(grc_wxgui.top_block_gui):
             server=True,
             )
         print 'made sink'
-        self.active_channels.append((self.port, newport))
+        self.active_channels.append({'port': self.port, 'gr_tcp': newport, 'Process': p})
         idx = len(self.active_channels) - 1
         print 'pre connect'
         self.connect((self.front,0), (newport, 0))
         print 'connect'
-        self.start()
+        #self.start()
         print 'unlock'
+        self.unlock()
         self.port +=1
         return idx
     
     
     def del_channel(self, idx):
-        self.disconnect(self.active_channels[idx][1])
+        print 'Disconnecting channel'
+        self.lock()
+        self.disconnect(self.front, self.active_channels[idx]['gr_tcp'])
+        self.unlock()
+        print 'Terminating'
+        self.active_channels[idx]['Process'].terminate()
+        print 'Still running?', self.active_channels[idx]['Process'].pid, self.active_channels[idx]['Process'].is_alive()
+        print 'setting',idx,'to none'
         self.active_channels[idx] = None
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
@@ -473,8 +483,8 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
 
 
 def run_capture(freq):
-    #cpt = Receiver(freq)
-    cpt = ReceiverTest(freq)
+    cpt = Receiver(freq)
+    #cpt = ReceiverTest(freq)
     print 'Starting cpt 1'
     cpt.run()
     print 'Finished (cpt)'

@@ -29,6 +29,8 @@ import datetime
 import threading
 import GnuRadio2
 import atexit
+import os
+
 
 class PlannerSat(QtGui.QGraphicsRectItem):
     def __init__(self, x, y, w, h, sat):   #, marker_id, pen, brush, font, db, parent):
@@ -104,9 +106,9 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         chan.setRXidx(idx)
 
     def stopChannel(self, idx):
-        print 'Doing del chan'
+        print 'Doing del chan',idx
         self.baseRX.del_channel(idx)
-        print 'Done del channel'
+        print 'Done del channel',idx
         
     def startReceiver(self):
         print 'Should be starting rx for', self.freq, 'for', self.duration, 'minutes'
@@ -187,6 +189,10 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.alt = params[8]
         self.tle = tle
         self.parent = parent
+                
+        self.decoder = None
+        
+    def startChannel(self):
         self.args = (self.name,
                      '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050.dat',
                      self.freq, self.tle[0], self.tle[1],
@@ -194,11 +200,17 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
                      self.start_time.datetime())
                      
         self.kwords = {'filename_raw':'/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_raw.dat'}
-        if len(self.decoder_options) > 0:
-            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_pipe'
-        self.decoder = None
         
-    def startChannel(self):
+        if len(self.decoder_options) > 0:
+            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_pipe_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050'
+            if os.path.exists(self.kwords['pipe_fname']):
+                mode = os.stat(self.kwords['pipe_fname']).st_mode
+                
+                if not stat.S_ISFIFO(mode):
+                    raise Exception("file "+self.kwords['pipe_fname']+" already exists but isn't a PIPE!")
+            else:    
+                os.mkfifo(self.kwords['pipe_fname'])
+
         self.parent.startChannel(self)
         if len(self.decoder_options) > 0:
             self.decoder = Popen(['multimon-ng', '-t', 'raw'] + self.decoder_options + [self.kwords['pipe_fname']],
@@ -207,9 +219,16 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
     def stopChannel(self):
         print 'shoot me!!'
         if self.decoder is not None:
+            print 'terminating decoder'
             self.decoder.terminate()
-            
+
+        print 'Stopping channel'
         self.parent.stopChannel(self.RXidx)
+        
+        if len(self.decoder_options) > 0:
+            print 'Deleting pipe'
+            os.remove(self.kwords['pipe_fname'])
+
         
     def setRXidx(self, idx):
         self.RXidx = idx
@@ -230,7 +249,11 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         w = 6
         x = (self.freq - (fx0 * 1e6)) * scale_x + off_x - w/2
         self.setRect(x, max(y, off_y), w, h)
-    
+
+    def mouseDoubleClickEvent(self, evt):
+        print 'The channel got a double click!!'
+
+        
 class Planner(QtGui.QGraphicsView):
     def __init__(self, parent = None, freq0 = 435, bw = 3):
         QtGui.QGraphicsView.__init__(self, parent)
@@ -348,31 +371,41 @@ class Planner(QtGui.QGraphicsView):
                             pos.y() + self.verticalScrollBar().value(),
                             self.default_rx_bw * self.scale_x,                   1)
         self.rx[-1].show()
+        self.editing = len(self.rx) - 1
+        print 'press', self.rx[-1].rect()
         
     def mouseReleaseEvent(self, evt):
-        rect = self.rx[-1].rect()
-        pos = evt.pos()
-        self.rx[-1].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
-        rect = self.rx[-1].rect()
+        if self.editing is not None:
+            rect = self.rx[self.editing].rect()
+            pos = evt.pos()
+            self.rx[self.editing].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
+            rect = self.rx[self.editing].rect()
+            
+            print 'release', self.rx[self.editing].rect()
+            if rect.height() / self.scale_y > 0.1:
+                print 'Start time', str(ephem.date(ephem.now() + ((rect.y() - self.orig_y) / self.scale_y) * ephem.minute))
+                print 'Duration', rect.height() / self.scale_y
+                print 'Centre Frequency', (rect.x() + rect.width()/2 - self.orig_x) / self.scale_x + (self.fx0 * 1e6)
 
-        print 'Start time', str(ephem.date(ephem.now() + ((rect.y() - self.orig_y) / self.scale_y) * ephem.minute))
-        print 'Duration', rect.height() / self.scale_y
-        print 'Centre Frequency', (rect.x() + rect.width()/2 - self.orig_x) / self.scale_x + (self.fx0 * 1e6)
+                self.rx[self.editing].setParams(ephem.date(ephem.now() + ((rect.y() - self.orig_y) / self.scale_y) * ephem.minute),
+                                                rect.height() / self.scale_y,
+                                                (rect.x() + rect.width()/2 - self.orig_x) / self.scale_x + (self.fx0 * 1e6))
 
-        self.rx[-1].setParams(ephem.date(ephem.now() + ((rect.y() - self.orig_y) / self.scale_y) * ephem.minute),
-                              rect.height() / self.scale_y,
-                              (rect.x() + rect.width()/2 - self.orig_x) / self.scale_x + (self.fx0 * 1e6))
-        
-        for f in self.scene().items(rect):
-            print f
-            if isinstance(f, PlannerSat):
-                print f.name, f.mode, f.freq, f.params
-                self.rx[-1].addChannel(f.name, f.mode, f.freq, f.tle, f.params)
-        
+                for f in self.scene().items(rect):
+                    print f
+                    if isinstance(f, PlannerSat):
+                        print f.name, f.mode, f.freq, f.params
+                        self.rx[self.editing].addChannel(f.name, f.mode, f.freq, f.tle, f.params)
+            else:
+                self.rx[self.editing].hide()
+                self.rx[self.editing] = None
+                self.rx = self.rx[:-1]
+                self.editing = None
+            
     def mouseMoveEvent(self, evt):
-        rect = self.rx[-1].rect()
+        rect = self.rx[self.editing].rect()
         pos = evt.pos()
-        self.rx[-1].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
+        self.rx[self.editing].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
 
     def cleanup(self):
         print 'In cleanup'

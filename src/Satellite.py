@@ -92,7 +92,7 @@ class Satellite(QtGui.QGraphicsRectItem):
                     self.passList.append((tr, azr, tt, altt, ts, azs, obs.lat, obs.lon, obs.elev))
                     obs.date = ts + 10.0 * ephem.minute
                 else:
-                    obs.date = ons.date + 10.0
+                    obs.date = obs.date + 10.0
         except Exception, e:
             print e
             
