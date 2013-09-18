@@ -224,8 +224,9 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
 
         self.parent.startChannel(self)
         if len(self.decoder_options) > 0:
+            self.decoder_fp_out = open(self.kwords['pipe_fname']+'.txt')
             self.decoder = Popen(['multimon-ng', '-t', 'raw'] + self.decoder_options + [self.kwords['pipe_fname']],
-                                 bufsize=-1)
+                                 bufsize=-1, stderr=self.decoder_fp_out, stdout=self.decoder_fp_out)
         
     def stopChannel(self):
         print 'shoot me!!'
@@ -238,6 +239,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         
         if len(self.decoder_options) > 0:
             print 'Deleting pipe'
+            self.decoder_fp_out.close()
             os.remove(self.kwords['pipe_fname'])
 
         

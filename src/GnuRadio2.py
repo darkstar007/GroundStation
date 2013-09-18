@@ -144,7 +144,7 @@ class ChannelDownsample(gr.hier_block2):
         self.connect((self.mult1, 0), (self.low_pass_filter, 0))
         self.connect((self.low_pass_filter, 0), (self.mult2, 0))
         self.connect((self.dop, 0), (self.mult2, 1))
-        self.connect((self.low_pass_filter, 0), (self.file_sink_raw, 0))
+        self.connect((self.mult2, 0), (self.file_sink_raw, 0))
         self.connect((self.mult2, 0), (self.wxgui_fftsink0, 0))
         self.connect((self.mult2, 0), self)
 
@@ -270,15 +270,18 @@ class ChannelAudio(gr.hier_block2):
         self.rec_gain = rec_gain
         self.af_gain = af_gain
         
-        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_vff((af_gain, ))
-        self.blocks_float_to_short_0 = blocks.float_to_short(1, rec_gain)
+        self.multiply_const_af_gain = blocks.multiply_const_vff((af_gain, ))
+        self.float_to_short = blocks.float_to_short(1, rec_gain)
 
-        self.blocks_file_sink_file = blocks.file_sink(gr.sizeof_short*1, str(audio_fname))
-        self.blocks_file_sink_file.set_unbuffered(False)
+        self.file_sink_file = blocks.file_sink(gr.sizeof_short*1, str(audio_fname))
+        self.file_sink_file.set_unbuffered(False)
+
+        self.multiply_const_wav_gain = blocks.multiply_const_vff((0.03, ))
+        self.wavfile_sink = blocks.wavfile_sink(str(audio_fname)+'.wav', 1, 8000, 8)
 
         if pipe_fname is not None:
-            self.blocks_file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
-            self.blocks_file_sink_pipe.set_unbuffered(False)
+            self.file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
+            self.file_sink_pipe.set_unbuffered(False)
 
         self.rational_resampler_48k = filter.rational_resampler_fff(
             interpolation=48,
@@ -292,6 +295,12 @@ class ChannelAudio(gr.hier_block2):
             taps=None,
             fractional_bw=None,
             )
+        self.rational_resampler_8k = filter.rational_resampler_fff(
+            interpolation=8,
+            decimation=32,
+            taps=None,
+            fractional_bw=None,
+            )
         
         self.audio_sink = audio.sink(48000, "pulse", True)
 
@@ -301,15 +310,18 @@ class ChannelAudio(gr.hier_block2):
 
         self.connect(self, (self.rational_resampler_22050, 0))
         self.connect(self, (self.rational_resampler_48k, 0))
+        self.connect(self, (self.rational_resampler_8k, 0))
         
-        self.connect((self.rational_resampler_48k, 0), (self.blocks_multiply_const_vxx_0, 0))
-        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink, 0))
+        self.connect((self.rational_resampler_48k, 0), (self.multiply_const_af_gain, 0))
+        self.connect((self.multiply_const_af_gain, 0), (self.audio_sink, 0))
         
-        self.connect((self.rational_resampler_22050, 0), (self.blocks_float_to_short_0, 0))
-        self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_file, 0))
+        self.connect((self.rational_resampler_22050, 0), (self.float_to_short, 0))
+        self.connect((self.float_to_short, 0), (self.file_sink_file, 0))
         if pipe_fname is not None:
-            self.connect((self.blocks_float_to_short_0, 0), (self.blocks_file_sink_pipe, 0))
+            self.connect((self.float_to_short, 0), (self.file_sink_pipe, 0))
 
+        self.connect((self.rational_resampler_8k, 0), (self.multiply_const_wav_gain, 0))
+        self.connect((self.multiply_const_wav_gain, 0), (self.wavfile_sink, 0))
 
 class ReceiverStage1(gr.hier_block2):
     def __init__(self, win, filename_raw, sample_rate):
