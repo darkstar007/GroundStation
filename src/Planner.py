@@ -281,7 +281,7 @@ class Planner(QtGui.QGraphicsView):
 
         self.fx0 = int(freq0)
         self.bw = int(bw)
-        self.default_rx_bw = 1536000.0 # Need a way to let user configure this - also allow for multiple RX units?
+        self.default_rx_bw = 2048000.0 # Need a way to let user configure this - also allow for multiple RX units?
         atexit.register(self.cleanup)
         
     def drawAxis(self):

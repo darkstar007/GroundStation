@@ -103,7 +103,7 @@ class ChannelDownsample(gr.hier_block2):
         self.sample_rate = sample_rate
         self.freq_offset = frequency_offset
         self.fname = filename_raw
-        self.decim = 6
+        self.decim = 8
         if isinstance(when, dict):
             when = datetime.datetime(when['year'], when['month'], when['day'],
                                      when['hour'], when['minute'], when['second'], when['microsecond'])
@@ -155,9 +155,9 @@ class ChannelDemodFM(gr.hier_block2):
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex))
 
         self.trans_fm = trans_fm = 1500
-        self.samp_rate = samp_rate = 1536000
+        self.samp_rate = samp_rate = 2048000
         self.mode = mode = 1
-        self.decim = decim = 6
+        self.decim = decim = 8
 
         self.low_pass_filter = filter.fir_filter_ccf(4, filter.firdes.low_pass(
             1, samp_rate/decim, 10000, trans_fm, filter.firdes.WIN_HAMMING, 6.76))
@@ -210,10 +210,10 @@ class ChannelDemodSSB(gr.hier_block2):
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex))
 
         self.trans = trans = 500
-        self.sample_rate = sample_rate = 1536000
+        self.sample_rate = sample_rate = 2048000
         self.low_ssb = low_ssb = 200
         self.high_ssb = high_ssb = 2800
-        self.decim = decim = 6
+        self.decim = decim = 8
         self.agc_decay = agc_decay = 50e-6
 
         ##################################################
@@ -319,7 +319,7 @@ class ReceiverStage1(gr.hier_block2):
         
         self.sample_rate = sample_rate
         self.fname = filename_raw
-        self.decim = 6
+        self.decim = 8
 
     
         self.wxgui_fftsink = fftsink2.fft_sink_c(
@@ -432,7 +432,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
     def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
-                 port = 0, pipe_fname = None, sample_rate=1536000,
+                 port = 0, pipe_fname = None, sample_rate=2048000,
                  frequency_offset = 0, filename_raw = 'pants_raw_ssb.dat', audio = True):
 
         grc_wxgui.top_block_gui.__init__(self, title = "SSB Channel "+sat_name)
@@ -465,7 +465,7 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
 
 class FM_RX_Channel(grc_wxgui.top_block_gui):
     def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
-                 port = 0, pipe_fname = None, sample_rate=1536000,
+                 port = 0, pipe_fname = None, sample_rate=2048000,
                  frequency_offset = 0, filename_raw = 'pants_raw_fm.dat', audio = True):
 
         grc_wxgui.top_block_gui.__init__(self, title = "FM Channel "+sat_name)
@@ -511,7 +511,7 @@ def orig():
     threading.Thread(target=run_capture, args=(1.0,)).start()
 
     print 'Starting the base receiver' 
-    rx = Base_RX(None, 1536000)
+    rx = Base_RX(None, 2048000)
     threading.Thread(target=run_rx, args=(rx,)).start()
 
     print 'Started base rx'
@@ -550,7 +550,7 @@ def latest():
     threading.Thread(target=run_capture, args=(436994178.0,)).start()
 
     print 'Starting the base receiver' 
-    rx = Base_RX(None, 1536000)
+    rx = Base_RX(None, 2048000)
     threading.Thread(target=run_rx, args=(rx,)).start()
     freq = 436994178.383 - 55e3
     cal_freq = (35000.0 - 5600.0)*freq  / 437.0e6
@@ -608,7 +608,7 @@ def latest2():
     threading.Thread(target=run_capture, args=(436.795e6,)).start()
 
     print 'Starting the base receiver' 
-    rx = Base_RX(None, 1536000)
+    rx = Base_RX(None, 2048000)
     threading.Thread(target=run_rx, args=(rx,)).start()
     freq=437.6e6
     cal_freq = (35000.0 - 5600.0)*freq  / 437.0e6
