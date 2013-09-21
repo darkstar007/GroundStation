@@ -171,7 +171,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         brush.setColor(QtGui.QColor(240, 40, 40, 200))
 
         self.setBrush(brush)
-        self.name = name
+        self.name = name.replace(' ', '_').replace('/', '_')  # sanitise the name a little
         self.mode = mode
         self.freq = freq
         self.start_time = params[0]
@@ -219,12 +219,17 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
                 
                 if not stat.S_ISFIFO(mode):
                     raise Exception("file "+self.kwords['pipe_fname']+" already exists but isn't a PIPE!")
-            else:    
-                os.mkfifo(self.kwords['pipe_fname'])
+            else:
+                try:
+                    os.mkfifo(self.kwords['pipe_fname'])
+                except Exception, e:
+                    print 'os.mkfifo failed',e
+                    print 'Pipe_fname', self.kwords['pipe_fname']
+                    self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_pipe'
 
         self.parent.startChannel(self)
         if len(self.decoder_options) > 0:
-            self.decoder_fp_out = open(self.kwords['pipe_fname']+'.txt')
+            self.decoder_fp_out = open(self.kwords['pipe_fname']+'.txt', 'w')
             self.decoder = Popen(['multimon-ng', '-t', 'raw'] + self.decoder_options + [self.kwords['pipe_fname']],
                                  bufsize=-1, stderr=self.decoder_fp_out, stdout=self.decoder_fp_out)
         

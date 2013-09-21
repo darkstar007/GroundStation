@@ -75,10 +75,10 @@ class Database():
                 ('PCSAT (NO-44)', 'NO-44', 26931, 145.8270e6, 0),
                 ('SAUDISAT 1C (SO-50)', 'SO-50', 27607, 436.795e6, -1),
                 ('CUTE-1 (CO-55)', 'CO-55', 27844, 436.8375e6-1000.0, 2),
-                ('CUBESAT XI-IV (CO-57)', 'XI-IV/CO-57', 27848, 436.8475e6, 0),
+                ('CUBESAT XI-IV (CO-57)', 'XI-IV', 27848, 436.8475e6, 0),
                 ('MOZHAYETS 4 (RS-22)', 'RS-22', 27939, 435.3520e6, 2),
                 ('HAMSAT (VO-52)', 'VO-52', 28650, 145.86000e6, 2),
-                ('CUBESAT XI-V (CO-58)', 'XI-V/CO-58', 28895, 437.465e6, 0),
+                ('CUBESAT XI-V (CO-58)', 'XI-V', 28895, 437.465e6, 0),
                 ('CUTE-1.7+APD II (CO-65)', 'Cute-1.7/CO-65', 32785, 437.275e6, 0),
                 ('DELFI-C3 (DO-64)', 'Delfi-C3', 32789, 145.8700e6-2e3, 6),
                 ('YUBILEINY (RS-30)', 'RS-30', 32953, 435.215e6, 2),
@@ -92,8 +92,8 @@ class Database():
                 ('JUGNU', 'JUGNU', 37839, 437.275e6, 2),
                 ('SRMSAT', 'SRMSAT', 37841, 437.4250e6, 2),
                 #('RAX-2', 'RAX-2', 37853, 437.345e6),
-                ('MASAT 1', 'MASAT', 38081, 437.345e6, 10),
-                ('AUBIESAT-1 (AO-71)', 'AubieSat', 37854, 437.475e6+6e3, 2),
+                ('MASAT 1', 'MASAT', 38081, 437.345e6+1e3, 10),
+                ('AUBIESAT-1 (AO-71)', 'AubieSat', 37854, 437.475-1e3, 2),
                 ('M-CUBED & EXP-1 PRIME', 'MCubed', 38051, 437.485e6+16e3, 4),
                 ('LUSAT (LO-19)', 'LO-19', 20442, 437.125e6, -1),
                 ('NOAA 15 [B]', 'NOAA 15', 25338, 137.62e6, 11),
@@ -151,6 +151,8 @@ class Database():
                 ('Aeneas', 1, 0),
                 ('STRaND-1', 1, 0),
                 ('CSSWE', 1, 0),
+                ('XI-IV', 1, 0),
+                ('XI-V', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
