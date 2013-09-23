@@ -184,8 +184,16 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         if self.mode == '1k2_AFSK':
             self.type = GnuRadio2.FM_RX_Channel
             self.decoder_options.append('-A')
+        elif self.mode == '9k6_FSK':
+            self.type = GnuRadio2.FM_RX_Channel
+            self.decoder_options.append('-a')
+            self.decoder_options.append('FSK9600')
+        elif self.mode == '9k6_GMSK':
+            self.type = GnuRadio2.FM_RX_Channel
         elif self.mode == 'CW':
             self.type = GnuRadio2.SSB_RX_Channel
+            self.decoder_options.append('-a')
+            self.decoder_options.append('MORSE_CW')
         elif self.mode == 'APRS':
             self.type = GnuRadio2.FM_RX_Channel
             self.decoder_options.append('-a')
