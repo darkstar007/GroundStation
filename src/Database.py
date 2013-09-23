@@ -52,6 +52,7 @@ class Database():
                 ('APT',        11,  3000.0, 'GnuRadio2.FM_RX_Channel'),
                 ('WBFM',       12,  3000.0, 'GnuRadio2.FM_RX_Channel'),
                 ('9k6_MSK',    13,  5000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('1k25_GMSK',  14,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
                 ]
             
             self.conn.executemany('INSERT INTO modes VALUES (?, ?, ?, ?)', mode_data)
@@ -61,72 +62,81 @@ class Database():
             print e
         
         try:
-            self.conn.execute('CREATE TABLE sats (name text, cname text, id int, freq real, mode int)')
+            self.conn.execute('CREATE TABLE sats (name text, cname text, norad_id int, id int unique)')
+            self.conn.execute('CREATE TABLE sats_modes (id int, freq float, mode int)')
+            self.conn.execute('CREATE INDEX name_idx ON sats(name)')
+            self.conn.execute('CREATE INDEX sat_id_idx ON sats(id)')
+            self.conn.execute('CREATE INDEX cname_idx ON sats(cname)')
+            self.conn.execute('CREATE INDEX mode_id_idx ON sats_modes(id)')
+
             sat_data = [
-                ('OSCAR 7 (AO-7)', 'AO-7', 7530, 145.9775e6, -1),
-                ('UOSAT 2 (UO-11)', 'UO-11', 14781, 145.826e6, 1),
+                (('OSCAR 7 (AO-7)', 'AO-7', 7530) , [(145.9775e6, -1)]),
+                (('UOSAT 2 (UO-11)', 'UO-11', 14781), [(145.826e6, 1)]),
                 #('EYESAT-1 (AO-27)', 'AO-27', 22825, 436.795e6, -1),
-                ('ITAMSAT (IO-26)', 'IO-26', 22826, 435.867e6, -1),
+                (('ITAMSAT (IO-26)', 'IO-26', 22826), [(435.867e6, -1)]),
                 #('RADIO ROSTO (RS-15)', 'RS-15', 23439, 29.3987e6),
-                ('JAS-2 (FO-29)', 'FO-29', 24278, 435.8e6-3e3, 2),
-                ('TECHSAT 1B (GO-32)', 'GO-32', 25397, 435.3250e6, 2),
-                ('SEDSAT 1 (SO-33)', 'SO-33', 25509, 437.91e6, -1),
+                (('JAS-2 (FO-29)', 'FO-29', 24278), [(435.8e6-3e3, 2)]),
+                (('TECHSAT 1B (GO-32)', 'GO-32', 25397), [(435.3250e6, 2)]),
+                (('SEDSAT 1 (SO-33)', 'SO-33', 25509), [(437.91e6, -1)]),
                 #('ISS (ZARYA)', 'ISS', 25544, 145.825e6, 9),
-                ('ISS (ZARYA)', 'ISS', 25544, 437.550e6, 9),
-                ('PCSAT (NO-44)', 'NO-44', 26931, 145.8270e6, 0),
-                ('SAUDISAT 1C (SO-50)', 'SO-50', 27607, 436.795e6, -1),
-                ('CUTE-1 (CO-55)', 'CO-55', 27844, 436.8375e6-1000.0, 2),
-                ('CUBESAT XI-IV (CO-57)', 'XI-IV', 27848, 436.8475e6+1e3, 2),
-                ('MOZHAYETS 4 (RS-22)', 'RS-22', 27939, 435.3520e6, 2),
-                ('HAMSAT (VO-52)', 'VO-52', 28650, 145.86000e6, 2),
-                ('CUBESAT XI-V (CO-58)', 'XI-V', 28895, 437.465e6-1e3, 0),
-                ('CUTE-1.7+APD II (CO-65)', 'Cute-1.7/CO-65', 32785, 437.275e6, 0),
-                ('DELFI-C3 (DO-64)', 'Delfi-C3', 32789, 145.8700e6-2e3, 6),
-                ('YUBILEINY (RS-30)', 'RS-30', 32953, 435.215e6, 2),
-                ('PRISM', 'PRISM', 33493, 437.25e6, 0),
-                ('STARS', 'STARS', 33498, 437.3050e6, -1),
-                ('KKS-1', 'KKS-1', 33499, 437.3850e6, -1),
-                ('SWISSCUBE', 'SwissCube', 35932, 437.5050e6, 0),
-                ('BEESAT', 'BEESAT', 35933, 436.0e6, 4),
-                ('ITUPSAT1', 'ITUpSAT1', 35935, 437.325e6, 8),
-                ('HOPE-1 (HO-68)', 'HO-68', 36122, 435.7900e6+600.0, 2),
-                ('JUGNU', 'JUGNU', 37839, 437.275e6, 2),
-                ('SRMSAT', 'SRMSAT', 37841, 437.4250e6, 2),
+                (('ISS (ZARYA)', 'ISS', 25544), [(437.550e6, 9), (145.825e6, 9)]),
+                (('PCSAT (NO-44)', 'NO-44', 26931), [(145.8270e6, 0)]),
+                (('SAUDISAT 1C (SO-50)', 'SO-50', 27607), [(436.795e6, -1)]),
+                (('CUTE-1 (CO-55)', 'CO-55', 27844),[( 436.8375e6-1000.0, 2), (437.470e6, 0)]),
+                (('CUBESAT XI-IV (CO-57)', 'XI-IV', 27848), [(436.8475e6+1e3, 2), (437.490e6, 0)]),
+                (('MOZHAYETS 4 (RS-22)', 'RS-22', 27939), [(435.3520e6, 2)]),
+                (('HAMSAT (VO-52)', 'VO-52', 28650), [(145.86000e6, 2)]),
+                (('CUBESAT XI-V (CO-58)', 'XI-V', 28895), [(437.465e6-1e3, 2), (437.345e6, 0)]),
+                (('CUTE-1.7+APD II (CO-65)', 'Cute-1.7/CO-65', 32785), [(437.275e6, 2), (437.475e6, 0), (437.475e6, 4)]),
+                (('DELFI-C3 (DO-64)', 'Delfi-C3', 32789), [(145.8700e6-2e3, 6)]),
+                (('YUBILEINY (RS-30)', 'RS-30', 32953), [(435.215e6, 2)]),
+                (('PRISM', 'PRISM', 33493), [(437.25e6, 0), (437.25e6, 2), (437.25e6, 4)]),
+                (('STARS', 'STARS', 33498), [(437.3050e6, -1)]),
+                (('KKS-1', 'KKS-1', 33499), [(437.3850e6, -1)]),
+                (('SWISSCUBE', 'SwissCube', 35932), [(437.5050e6, 0), (437.505e6, 2)]),
+                (('BEESAT', 'BEESAT', 35933), [(436.0e6, 4), (436.00e6, 3)]),
+                (('ITUPSAT1', 'ITUpSAT1', 35935), [(437.325e6, 8), (437.325e6, 2)]),
+                (('HOPE-1 (HO-68)', 'HO-68', 36122), [(435.7900e6+600.0, 2)]),
+                (('JUGNU', 'JUGNU', 37839), [(437.275e6, 2)]),
+                (('SRMSAT', 'SRMSAT', 37841), [(437.4250e6, 2)]),
                 #('RAX-2', 'RAX-2', 37853, 437.345e6),
-                ('MASAT 1', 'MASAT', 38081, 437.345e6+1e3, 10),
-                ('AUBIESAT-1 (AO-71)', 'AubieSat', 37854, 437.475-1e3, 2),
-                ('M-CUBED & EXP-1 PRIME', 'MCubed', 38051, 437.485e6+16e3, 5),
-                ('LUSAT (LO-19)', 'LO-19', 20442, 437.125e6, -1),
-                ('NOAA 15 [B]', 'NOAA 15', 25338, 137.62e6, 11),
-                ('NOAA 17 [-]', 'NOAA 17', 27453, 137.5e6, 11),
-                ('NOAA 18 [B]', 'NOAA 18', 28654, 137.9125e6, 11),
-                ('NOAA 19 [+]', 'NOAA 19', 33591, 137.1e6, 11),
-                ('Classic FM', 'Classic FM', -1, 101.9e6, 12),
-                ('Graves', 'Graves', -1, 143.050e6, -1),
-                ('Aeneas', 'Aeneas', 38760, 437.6e6+4.5e3, 0),
+                (('MASAT 1', 'MASAT', 38081), [(437.345e6+1e3, 10), (437.345e6+1e3, 2), (437.345e6+1e3, 14)]),
+                (('AUBIESAT-1 (AO-71)', 'AubieSat', 37854), [(437.475-1e3, 2), (437.475-1e3, 0)]),
+                (('M-CUBED & EXP-1 PRIME', 'MCubed', 38051), [(437.485e6+16e3, 5)]),
+                (('LUSAT (LO-19)', 'LO-19', 20442), [(437.125e6, -1)]),
+                (('NOAA 15 [B]', 'NOAA 15', 25338), [(137.62e6, 11)]),
+                (('NOAA 17 [-]', 'NOAA 17', 27453), [(137.5e6, 11)]),
+                (('NOAA 18 [B]', 'NOAA 18', 28654), [(137.9125e6, 11)]),
+                (('NOAA 19 [+]', 'NOAA 19', 33591), [(137.1e6, 11)]),
+                (('Classic FM', 'Classic FM', -1), [(101.9e6, 12)]),
+                (('Graves', 'Graves', -1), [(143.050e6, -1)]),
+                (('Aeneas', 'Aeneas', 38760), [(437.6e6+4.5e3, 0)]),
                 #('TechEdSat', 'TechEdSat', 38854, 437.465e6, -1),
-                ('BeeSat-2', 'Beesat-2', 39136, 435.950e6, 3),
+                (('BeeSat-2', 'Beesat-2', 39136), [(435.950e6, 3)]),
                 #('CUBEBUG 1', 'CubeBUG', 39153, 437.432e6, 0),
-                ('TurkSAT', 'TurkSAT', -1, 437.225e6, -1),
-                ('NEE-01 PEGASUS', 'NEE-01', 39151, 910.0e6, -1),
-                ('ESTCUBE 1', 'ESTCube-1', 39161, 437.251e6, 2),
-                ('STRAND 1', 'STRaND-1', 39090, 437.568e6, 4),
-                ('CSSWE', 'CSSWE', 38761, 437.349e6, 4),
+                (('TurkSAT', 'TurkSAT', -1), [(437.225e6, -1)]),
+                #(('NEE-01 PEGASUS', 'NEE-01', 39151), 910.0e6, -1, -1, -1, -1, -1),
+                (('ESTCUBE 1', 'ESTCube-1', 39161), [(437.251e6, 2), (437.505e6, 5), (437.505e6, 8)]),
+                (('STRAND 1', 'STRaND-1', 39090), [(437.568e6, 4)]),
+                (('CSSWE', 'CSSWE', 38761), [(437.349e6, 4)]),
                 #('FITSAT-1 (NIWAKA)', 'FITSAT-1', 38853, 437.250e6, 2),
                 #('SOMP', 'SOMP', 39134, 437.504, 2),
-                ('PicoDragon', 'PicoDragon', -1, 437.365e6, 0),
-                ('ArduSat-1', 'ArduSat-1', -1, 437.325e6, 13),
-                ('ArduSat-X', 'ArduSat-X', -1, 437.345e6, 13),
-                ('TechEdSat-3', 'TechEdSat-3', -1, 437.465e6, 0),
-                ('ROMIT1', 'Romit1', -1, 437.505e6, 0),
+                (('PicoDragon', 'PicoDragon', -1), [(437.365e6, 0)]),
+                (('ArduSat-1', 'ArduSat-1', -1), [(437.325e6, 13)]),
+                (('ArduSat-X', 'ArduSat-X', -1), [(437.345e6, 13)]),
+                (('TechEdSat-3', 'TechEdSat-3', -1), [(437.465e6, 0)]),
+                (('ROMIT1', 'Romit1', -1), [(437.505e6, 0)]),
             ]
-            
-            self.conn.executemany('INSERT INTO sats VALUES (?, ?, ?, ?, ?)', sat_data)
-            self.conn.execute('CREATE INDEX name_idx ON sats(name)')
-            self.conn.execute('CREATE INDEX cname_idx ON sats(cname)')
+
+            count = 0
+            for sat in xrange(len(sat_data)):
+                self.conn.execute('INSERT INTO sats VALUES (?, ?, ?, ?)', sat_data[sat][0]+(sat,))
+                for m in xrange(len(sat_data[sat][1])):
+                    self.conn.execute('INSERT INTO sats_modes VALUES (?, ?, ?)', (sat,)+sat_data[sat][1][m])
+
             self.conn.commit()
         except Exception, e:
-            print e
+            print 'Database:sats/sats_modes:',e
 
         try:
             self.conn.execute('CREATE TABLE pers (name text, display integer, grtrack integer)')
@@ -192,21 +202,20 @@ class Database():
             return (str(res[0][0]))
 
     def getFreq(self, name):
-        self.curs.execute('SELECT freq FROM sats WHERE cname=?', (name,))
+        self.curs.execute('SELECT freq FROM sats,sats_modes WHERE cname=? AND sats.id = sats_modes.id', (name,))
         res = self.curs.fetchall()
-
         if len(res) == 0:
-            return (101.9e6)
+            return ([101.9e6])
         else:
-            return (res[0][0])
+            return ([f[0] for f in res])
         
     def getMode(self, name):
-        self.curs.execute('SELECT modes.name FROM sats,modes WHERE sats.cname=? AND sats.mode = modes.mode', (name,))
+        self.curs.execute('SELECT modes.name FROM sats,modes,sats_modes WHERE sats.cname=? AND sats_modes.mode = modes.mode AND sats.id = sats_modes.id', (name,))
         res = self.curs.fetchall()
         if len(res) == 0:
-            return ('SSB')
+            return (['SSB'])
         else:
-            return (res[0][0])
+            return ([m[0] for m in res])
 
     def getTLE(self, name):
         self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name',

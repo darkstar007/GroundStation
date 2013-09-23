@@ -36,28 +36,32 @@ import os
 import time
 
 class PlannerSat(QtGui.QGraphicsRectItem):
-    def __init__(self, x, y, w, h, sat):   #, marker_id, pen, brush, font, db, parent):
+    def __init__(self, x, y, w, h, sat, idx=0):   #, marker_id, pen, brush, font, db, parent):
         QtGui.QGraphicsRectItem.__init__(self, x, y, w, h)
-        brush = QtGui.QBrush()
+        self.brush = QtGui.QBrush()
         
-        brush.setStyle(QtCore.Qt.SolidPattern)
-        
-        if sat.mode == 'APRS':
-            brush.setColor(QtGui.QColor(240, 10, 210, 100))
-        elif sat.mode == '1k2_AFSK':
-            brush.setColor(QtGui.QColor(10, 10, 210, 100))
-        elif sat.mode == 'CW':
-            brush.setColor(QtGui.QColor(120, 10, 110, 100))
-        elif sat.mode == '9k6_GMSK':
-            brush.setColor(QtGui.QColor(140, 110, 10, 100))
-        else:
-            brush.setColor(QtGui.QColor(140, 240, 240, 100))    
-        self.setBrush(brush)
-        self.setToolTip(sat.sat.name+' : '+sat.mode)
+        self.brush.setStyle(QtCore.Qt.SolidPattern)
         self.name = sat.sat.name
-        self.mode = sat.mode
-        self.freq = sat.freq
         self.tle = sat.tle
+        self.sat = sat
+
+        self.setIndex(idx)
+
+    def setIndex(self, idx):
+        if self.sat.mode[idx] == 'APRS':
+            self.brush.setColor(QtGui.QColor(240, 10, 210, 100))
+        elif self.sat.mode[idx] == '1k2_AFSK':
+            self.brush.setColor(QtGui.QColor(10, 10, 210, 100))
+        elif self.sat.mode[idx] == 'CW':
+            self.brush.setColor(QtGui.QColor(120, 10, 110, 100))
+        elif self.sat.mode[idx] == '9k6_GMSK':
+            self.brush.setColor(QtGui.QColor(140, 110, 10, 100))
+        else:
+            self.brush.setColor(QtGui.QColor(140, 240, 240, 100))    
+        self.setBrush(self.brush)
+        self.setToolTip(self.name+' : '+self.sat.mode[idx])
+        self.mode = self.sat.mode[idx]
+        self.freq = self.sat.freq[idx]
         
     def setParams(self, params):
         self.params = params[:]
@@ -357,29 +361,37 @@ class Planner(QtGui.QGraphicsView):
         self.drawAxis()
         for passes in xrange(len(satellite.passList)):
             tr, azr, tt, altt, ts, azs, lat, lon, alt = satellite.passList[passes]
-            if math.degrees(altt) > 15.0 and (tr - ephem.now()) < 1.0 and satellite.freq > (self.fx0 * 1e6) and satellite.freq < (self.fx0 + self.bw) * 1e6:
-                if tr < ephem.now():
-                    tr = ephem.now()
+            if math.degrees(altt) > 15.0 and (tr - ephem.now()) < 1.0:
 
-                y = ((tr - ephem.now()) * 24.0 * 60.0) * self.scale_y + self.orig_y
-                h = min(((ts - tr) * 24.0 * 60.0) * self.scale_y, 25 * 60 * self.scale_y - y)
+                for f in xrange(len(satellite.freq)):
+                    if satellite.freq[f] > (self.fx0 * 1e6) and satellite.freq[f] < (self.fx0 + self.bw) * 1e6:
+                        if tr < ephem.now():
+                            tr = ephem.now()
+
+                        y = ((tr - ephem.now()) * 24.0 * 60.0) * self.scale_y + self.orig_y
+                        h = min(((ts - tr) * 24.0 * 60.0) * self.scale_y, 25 * 60 * self.scale_y - y)
                 
-                # Calculate the width from the mode - one day!
-                w = 16
-                x = (satellite.freq - (self.fx0 * 1e6)) * self.scale_x + self.orig_x - w/2
+                        # Calculate the width from the mode - one day!
+                        w = 16
+                        x = (satellite.freq[f] - (self.fx0 * 1e6)) * self.scale_x + self.orig_x - w/2
 
-                satellite.passListPlan[passes].setRect(x, max(y, self.orig_y), w, h)
-                satellite.passListPlan[passes].setParams((tr, azr, tt, altt, ts, azs, lat, lon, alt))
+                        i = passes * len(satellite.freq) + f
+                        satellite.passListPlan[i].setIndex(f)
+                        satellite.passListPlan[i].setRect(x, max(y, self.orig_y), w, h)
+                        satellite.passListPlan[i].setParams((tr, azr, tt, altt, ts, azs, lat, lon, alt))
 
-                if satellite.passListPlan[passes].scene() == None:
-                    self.scene().addItem(satellite.passListPlan[passes])
-                satellite.passListPlan[passes].show()
+                        if satellite.passListPlan[i].scene() == None:
+                            self.scene().addItem(satellite.passListPlan[i])
+                        satellite.passListPlan[i].show()
 
             else:
-                satellite.passListPlan[passes].hide()
-        for passes in xrange(len(satellite.passListPlan) - len(satellite.passList)):
-            #print 'hiding'
-            satellite.passListPlan[passes+len(satellite.passList)].hide()
+                for f in xrange(len(satellite.freq)):
+                    satellite.passListPlan[passes * len(satellite.freq) + f].hide()
+                    
+        for passes in xrange(len(satellite.passListPlan) - (len(satellite.passList) * len(satellite.freq))):
+            print 'hiding', passes+(len(satellite.passList) * len(satellite.freq)), len(satellite.passListPlan)
+            
+            satellite.passListPlan[passes+(len(satellite.passList) * len(satellite.freq))].hide()
 
         nw = datetime.datetime.now()
         for x in xrange(len(self.time_labels)):

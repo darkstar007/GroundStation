@@ -51,8 +51,11 @@ class Satellite(QtGui.QGraphicsRectItem):
         self.doDisplay, self.doGroundTrack = self.db.getSat(self.sat.name)
         self.freq = self.db.getFreq(self.sat.name)
         self.mode = self.db.getMode(self.sat.name)
+        if len(self.freq) != len(self.mode):
+            raise Exception("We didn't get a frequency for each mode (or vis versa)")
+
         self.tle = self.db.getTLE(self.sat.name)
-        
+
         #self.doGroundTrack = True
 
         self.footprintPos = None
@@ -75,7 +78,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         self.backgroundSize = (x, y)
 
     def updatePassList(self, obs):
-        print 'Updating pass list'
+        print 'Updating pass list', self.sat.name
         self.passList = []
         try:
             while (obs.date - ephem.now()) < 2.0:
@@ -96,7 +99,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         except Exception, e:
             print e
             
-        diff = len(self.passList) - len(self.passListPlan)
+        diff = len(self.passList * len(self.freq)) - len(self.passListPlan)
         if diff > 0:
             for x in range(diff):
                 self.passListPlan.append(PlannerSat(1,1,1,1,self))
