@@ -225,7 +225,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.kwords = {'filename_raw':'/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_raw.dat'}
         
         if len(self.decoder_options) > 0:
-            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_pipe_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050'
+            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050_pipe'
             if os.path.exists(self.kwords['pipe_fname']):
                 mode = os.stat(self.kwords['pipe_fname']).st_mode
                 
@@ -241,7 +241,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
 
         self.parent.startChannel(self)
         if len(self.decoder_options) > 0:
-            self.decoder_fp_out = open(self.kwords['pipe_fname']+'.txt', 'w')
+            self.decoder_fp_out = open(self.kwords['pipe_fname'][:-5]+'.txt', 'w')
             self.decoder = Popen(['multimon-ng', '-t', 'raw'] + self.decoder_options + [self.kwords['pipe_fname']],
                                  bufsize=-1, stderr=self.decoder_fp_out, stdout=self.decoder_fp_out)
         

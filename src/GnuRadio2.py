@@ -658,7 +658,16 @@ def latest2():
     decoder_options.append('AFSK1200')
 
     decoder = Popen(['multimon-ng', '-t', 'raw'] + decoder_options + [pname], bufsize=-1)
-    
+
+def mcubed():
+    print 'Starting capture'
+    threading.Thread(target=run_capture, args=(436717157.293,)).start()
+    args = ('Mcubed', 'mcubed.dat', 437.485e6+16e3,
+            '1 37855U 11061F   13259.66649398  .00003345  00000-0  25134-3 0  5919',
+            '2 37855 101.7030 156.4574 0234018 123.9591 297.7441 14.84659975102029',
+            52.44332,-0.10982, 5.0,
+            datetime.datetime(2013, 9, 18, 9, 45, 25, 100))
+
 if __name__ == '__main__':
     #orig()
     latest2()
