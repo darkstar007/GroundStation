@@ -194,6 +194,8 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
             self.decoder_options.append('FSK9600')
         elif self.mode == '9k6_GMSK':
             self.type = GnuRadio2.FM_RX_Channel
+        elif self.mode == '19k2_GFSK':
+            self.type = GnuRadio2.FM_RX_Channel
         elif self.mode == 'CW':
             self.type = GnuRadio2.SSB_RX_Channel
             self.decoder_options.append('-a')
@@ -217,7 +219,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         
     def startChannel(self):
         base_name = '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_'+self.mode
-        self.args = (self.name,
+        self.args = (self.name, self.mode,
                      base_name+'_22050.dat',
                      self.freq, self.tle[0], self.tle[1],
                      math.degrees(self.lat), math.degrees(self.lon), self.alt,

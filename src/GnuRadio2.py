@@ -94,7 +94,7 @@ class ReceiverTest(gr.top_block):
 
 
 class ChannelDownsample(gr.hier_block2):
-    def __init__(self, win, sat_name, sample_rate, frequency_offset, filename_raw,
+    def __init__(self, win, sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
                  frequency, line1, line2, lat, lon, alt, when):
         gr.hier_block2.__init__(self, "Channel "+str(sat_name),
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
@@ -126,7 +126,7 @@ class ChannelDownsample(gr.hier_block2):
             fft_rate=15,
             average=True,
             avg_alpha=None,
-            title="FFT Plot (Downsampled - "+sat_name+")",
+            title="FFT Plot (Downsampled - "+sat_name+" "+str(mode_name)+")",
             peak_hold=True,
             )
 
@@ -149,8 +149,8 @@ class ChannelDownsample(gr.hier_block2):
         self.connect((self.mult2, 0), self)
 
 class ChannelDemodFM(gr.hier_block2):
-    def __init__(self, win, sat_name, nbfm = True):
-        gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" FM",
+    def __init__(self, win, sat_name, mode_name, nbfm = True):
+        gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" "+str(mode_name)+" FM",
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex))
 
@@ -194,7 +194,7 @@ class ChannelDemodFM(gr.hier_block2):
             fft_rate=15,
             average=True,
             avg_alpha=None,
-            title="FFT Plot (Audio - "+sat_name+")",
+            title="FFT Plot (Audio - "+sat_name+" "+str(mode_name)+")",
             peak_hold=True,
             )
 
@@ -204,8 +204,8 @@ class ChannelDemodFM(gr.hier_block2):
         self.connect((self.fm_demod, 0), self)
 
 class ChannelDemodSSB(gr.hier_block2):
-    def __init__(self, win, sat_name):
-        gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" SSB",
+    def __init__(self, win, sat_name, mode_name):
+        gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" "+str(mode_name)+" SSB",
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex))
 
@@ -231,7 +231,7 @@ class ChannelDemodSSB(gr.hier_block2):
             fft_rate=15,
             average=True,
             avg_alpha=None,
-            title="FFT Plot (Audio - "+sat_name+")",
+            title="FFT Plot (Audio - "+sat_name+" "+str(mode_name)+")",
             peak_hold=True,
             )
 
@@ -443,7 +443,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.active_channels[idx] = None
         
 class SSB_RX_Channel(grc_wxgui.top_block_gui):
-    def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
+    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
                  port = 0, pipe_fname = None, sample_rate=2048000,
                  frequency_offset = 0, filename_raw = 'pants_raw_ssb.dat', audio = True):
 
@@ -460,10 +460,10 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
             )
         self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
-        self.chandown = ChannelDownsample(self.GetWin(), sat_name, sample_rate, frequency_offset, filename_raw,
+        self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
                                           frequency, line1, line2, lat, lon, alt, when)
         self.Add(self.chandown.wxgui_fftsink0.win)
-        self.demod = ChannelDemodSSB(self.GetWin(), sat_name)
+        self.demod = ChannelDemodSSB(self.GetWin(), sat_name, mode_name)
         self.Add(self.demod.fftsink_audio.win)
         if audio:
             self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
@@ -476,7 +476,7 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         self.connect(self.demod, self.audio)
 
 class FM_RX_Channel(grc_wxgui.top_block_gui):
-    def __init__(self, sat_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
+    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
                  port = 0, pipe_fname = None, sample_rate=2048000,
                  frequency_offset = 0, filename_raw = 'pants_raw_fm.dat', audio = True):
 
@@ -492,10 +492,10 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
             )
         self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
-        self.chandown = ChannelDownsample(self.GetWin(), sat_name, sample_rate, frequency_offset, filename_raw,
+        self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
                                           frequency, line1, line2, lat, lon, alt, when)
         self.Add(self.chandown.wxgui_fftsink0.win)
-        self.demod = ChannelDemodFM(self.GetWin(), sat_name)
+        self.demod = ChannelDemodFM(self.GetWin(), sat_name, mode_name)
         self.Add(self.demod.fftsink_audio.win)
         if audio:
             self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
