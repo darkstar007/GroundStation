@@ -498,7 +498,7 @@ class FM_RX_Channel(grc_wxgui.top_block_gui):
         self.demod = ChannelDemodFM(self.GetWin(), sat_name)
         self.Add(self.demod.fftsink_audio.win)
         if audio:
-            self.audio = ChannelAudio(sat_name, audio_fname, pipe_fname)
+            self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
         else:
             self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
 

@@ -216,16 +216,17 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.decoder = None
         
     def startChannel(self):
+        base_name = '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_'+self.mode
         self.args = (self.name,
-                     '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050.dat',
+                     base_name+'_22050.dat',
                      self.freq, self.tle[0], self.tle[1],
                      math.degrees(self.lat), math.degrees(self.lon), self.alt,
                      self.start_time.datetime())
                      
-        self.kwords = {'filename_raw':'/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_raw.dat'}
+        self.kwords = {'filename_raw': base_name+'_raw.dat'}
         
         if len(self.decoder_options) > 0:
-            self.kwords['pipe_fname'] = '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_22050_pipe'
+            self.kwords['pipe_fname'] = base_name+'_22050_pipe'
             if os.path.exists(self.kwords['pipe_fname']):
                 mode = os.stat(self.kwords['pipe_fname']).st_mode
                 
