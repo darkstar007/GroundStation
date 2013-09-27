@@ -390,8 +390,7 @@ class Planner(QtGui.QGraphicsView):
                     satellite.passListPlan[passes * len(satellite.freq) + f].hide()
                     
         for passes in xrange(len(satellite.passListPlan) - (len(satellite.passList) * len(satellite.freq))):
-            print 'hiding', passes+(len(satellite.passList) * len(satellite.freq)), len(satellite.passListPlan)
-            
+            #print 'hiding', passes+(len(satellite.passList) * len(satellite.freq)), len(satellite.passListPlan)
             satellite.passListPlan[passes+(len(satellite.passList) * len(satellite.freq))].hide()
 
         nw = datetime.datetime.now()
