@@ -204,7 +204,8 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
             self.type = GnuRadio2.FM_RX_Channel
             self.decoder_options.append('-a')
             self.decoder_options.append('AFSK1200')
-
+        elif self.mode == 'APT':
+            self.type = GnuRadio2.FM_RX_Channel
         else:
             self.type = GnuRadio2.SSB_RX_Channel
 

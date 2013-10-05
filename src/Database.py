@@ -35,24 +35,24 @@ class Database():
         self.curs = self.conn.cursor()
 
         try:
-            self.conn.execute('CREATE TABLE modes (name text, mode int unique, bandwidth real, class text)')
+            self.conn.execute('CREATE TABLE modes (name text, mode int unique, class text, bandwidth real)')
             mode_data = [
-                ('Other',      -1,    -1.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('1k2_AFSK',    0,  3000.0, 'GnuRadio2.FM_RX_Channel'),
-                ('1k2_FSK',     1,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('CW',          2,   600.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('4k8_GMSK',    3,  5000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('9k6_GMSK',    4,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('9k6_FSK',     5,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('1k2_BPSK',    6,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('CW(FM)',      7,   600.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('19k2_GFSK',   8,  8000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('APRS',        9,  3000.0, 'GnuRadio2.FM_RX_Channel'),
-                ('0k625_GFSK', 10,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('APT',        11,  3000.0, 'GnuRadio2.FM_RX_Channel'),
-                ('WBFM',       12,  3000.0, 'GnuRadio2.FM_RX_Channel'),
-                ('9k6_MSK',    13,  5000.0, 'GnuRadio2.SSB_RX_Channel'),
-                ('1k25_GMSK',  14,  3000.0, 'GnuRadio2.SSB_RX_Channel'),
+                ('Other',      -1, 'GnuRadio2.SSB_RX_Channel',  3000.0),
+                ('1k2_AFSK',    0, 'GnuRadio2.FM_RX_Channel' ,  3000.0),
+                ('1k2_FSK',     1, 'GnuRadio2.SSB_RX_Channel',  3000.0),
+                ('CW',          2, 'GnuRadio2.SSB_RX_Channel',   600.0),
+                ('4k8_GMSK',    3, 'GnuRadio2.SSB_RX_Channel',  5000.0),
+                ('9k6_GMSK',    4, 'GnuRadio2.SSB_RX_Channel',  8000.0),
+                ('9k6_FSK',     5, 'GnuRadio2.SSB_RX_Channel',  8000.0),
+                ('1k2_BPSK',    6, 'GnuRadio2.SSB_RX_Channel',  3000.0),
+                ('CW(FM)',      7, 'GnuRadio2.SSB_RX_Channel',   600.0),
+                ('19k2_GFSK',   8, 'GnuRadio2.SSB_RX_Channel',  8000.0),
+                ('APRS',        9, 'GnuRadio2.FM_RX_Channel' ,  3000.0),
+                ('0k625_GFSK', 10, 'GnuRadio2.SSB_RX_Channel',  3000.0),
+                ('APT',        11, 'GnuRadio2.FM_RX_Channel' ,  3000.0),
+                ('WBFM',       12, 'GnuRadio2.FM_RX_Channel' ,  3000.0),
+                ('9k6_MSK',    13, 'GnuRadio2.SSB_RX_Channel',  5000.0),
+                ('1k25_GMSK',  14, 'GnuRadio2.SSB_RX_Channel',  3000.0),
                 ]
             
             self.conn.executemany('INSERT INTO modes VALUES (?, ?, ?, ?)', mode_data)
@@ -126,6 +126,9 @@ class Database():
                 (('ArduSat-X', 'ArduSat-X', -1), [(437.345e6, 13)]),
                 (('TechEdSat-3', 'TechEdSat-3', -1), [(437.465e6, 0)]),
                 (('ROMIT1', 'Romit1', -1), [(437.505e6, 0)]),
+                (('GB3VHF', 'GB3VHF', -1), [(144.4285e6, 2)]),
+                (('DANDE', 'DANDE', 99999), [(436.75e6, 5)]),
+                (('CUSat', 'CUSat', -1), [(437.405e6, 0)]),
             ]
 
             count = 0
@@ -163,6 +166,7 @@ class Database():
                 ('CSSWE', 1, 0),
                 ('XI-IV', 1, 0),
                 ('XI-V', 1, 0),
+                ('DANDE', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
@@ -321,7 +325,9 @@ class Database():
                           'CP5\r\n',
                           '1 38763U 12048F   13259.24883440 +.00003874 +00000-0 +37148-3 0 02536\r\n',
                           '2 38763 064.6724 352.4131 0190656 185.7738 174.1174 14.81920389042548\r\n',
-
+                          'DANDE',
+                          '1 99999U 00000U   13272.68162153  .00000351  00000-0  12139-4 0 00004',
+                          '2 99999 080.9969 315.2113 0796928 158.5047 042.9913 13.96429132000014'
                           ]
                 
             for x in xrange(len(lines) / 3):
