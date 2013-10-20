@@ -4,7 +4,7 @@
   <key>doppler_doppler_c</key>
   <category>Doppler</category>
   <import>import doppler</import>
-  <make>doppler.doppler_c($*line1, $*line2, $lat, $lon, $alt, $year, $month, $day, $hour, $minute, $second, $microsecond)</make>
+  <make>doppler.doppler_c($*line1, $*line2, $frequency, $sample_rate, $lat, $lon, $alt, $year, $month, $day, $hour, $minute, $second, $microsecond)</make>
 
   <param>
     <name>TLE Line 1</name>
@@ -15,6 +15,16 @@
     <name>TLE Line 2</name>
     <key>line2</key>
     <type>string</type>
+  </param>
+  <param>
+    <name>Frequency</name>
+    <key>frequency</key>
+    <type>float</type>
+  </param>
+  <param>
+    <name>Sample Rate</name>
+    <key>sample_rate</key>
+    <type>float</type>
   </param>
   <param>
     <name>Latitude</name>
