@@ -127,8 +127,8 @@ class Database():
                 (('TechEdSat-3', 'TechEdSat-3', -1), [(437.465e6, 0)]),
                 (('ROMIT1', 'Romit1', -1), [(437.505e6, 0)]),
                 (('GB3VHF', 'GB3VHF', -1), [(144.4285e6, 2)]),
-                (('DANDE', 'DANDE', 99999), [(436.75e6, 5)]),
-                (('CUSat', 'CUSat', -1), [(437.405e6, 0)]),
+                (('DANDE', 'DANDE', 39267), [(436.75e6, 5)]),
+                (('CUSAT 1', 'CUSat', 39266), [(437.405e6, 0)]),
             ]
 
             count = 0
@@ -167,6 +167,7 @@ class Database():
                 ('XI-IV', 1, 0),
                 ('XI-V', 1, 0),
                 ('DANDE', 1, 0),
+                ('CUSat', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
@@ -181,6 +182,8 @@ class Database():
             self.conn.execute("INSERT INTO satgroups VALUES ('amateur.txt')")
             self.conn.execute("INSERT INTO satgroups VALUES ('noaa.txt')")
             self.conn.execute("INSERT INTO satgroups VALUES ('cubesat.txt')")
+            self.conn.execute("INSERT INTO satgroups VALUES ('engineering.txt')")
+            self.conn.execute("INSERT INTO satgroups VALUES ('science.txt')")
             self.conn.commit()
         except Exception, e3:
             print e3
@@ -325,9 +328,6 @@ class Database():
                           'CP5\r\n',
                           '1 38763U 12048F   13259.24883440 +.00003874 +00000-0 +37148-3 0 02536\r\n',
                           '2 38763 064.6724 352.4131 0190656 185.7738 174.1174 14.81920389042548\r\n',
-                          'DANDE',
-                          '1 99999U 00000U   13272.68162153  .00000351  00000-0  12139-4 0 00004',
-                          '2 99999 080.9969 315.2113 0796928 158.5047 042.9913 13.96429132000014'
                           ]
                 
             for x in xrange(len(lines) / 3):
