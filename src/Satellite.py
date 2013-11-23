@@ -114,7 +114,8 @@ class Satellite(QtGui.QGraphicsRectItem):
                 self.updatePassList(obs)
                 
             self.parent.passTable.update(self)
-            self.parent.planner.update(self)
+            for x in self.parent.planner.keys():
+                self.parent.planner[x].update(self)
             
             self.sat.compute(obs)
 
