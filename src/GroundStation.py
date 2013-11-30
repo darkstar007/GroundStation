@@ -336,14 +336,17 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         tab3.setLayout(self.passPanel)
         self.tab.addTab(tab3, "Passes")
 
-        tab4 = {}
+        tab4 = QtGui.QTabWidget()
+        stab4 = {}
         for x in self.plannerLabels.keys():
             self.planner[x] = Planner(freq0 = self.plannerLabels[x])
-            tab4[x] = QtGui.QWidget()
+            stab4[x] = QtGui.QWidget()
             playout = QtGui.QHBoxLayout()
             playout.addWidget(self.planner[x])
-            tab4[x].setLayout(playout)
-            self.tab.addTab(tab4[x], 'Planner '+x)
+            stab4[x].setLayout(playout)
+            tab4.addTab(stab4[x], x)
+
+        self.tab.addTab(tab4, 'Planner')
 
         tab5 = QtGui.QWidget()
         skybox = QtGui.QHBoxLayout()
