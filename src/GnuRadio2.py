@@ -52,7 +52,7 @@ class Receiver(gr.top_block):
         self.freq = frequency
         self.port = port
         
-        self.osmosdr_source = osmosdr.source( args="nchan=" + str(1) + " " + ""  )
+        self.osmosdr_source = osmosdr.source( args="nchan=" + str(1) + " " + "rtl=00001001"  )
         self.osmosdr_source.set_sample_rate(self.sample_rate)
         self.osmosdr_source.set_center_freq(self.freq, 0)
         self.osmosdr_source.set_freq_corr(freq_corr, 0)

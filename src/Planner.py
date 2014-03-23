@@ -93,7 +93,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = True
 
     def runCapture(self):
-        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=-72.957) #-30.0e3/437.0)
+        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=71) #-30.0e3/437.0)
         print 'Starting cpt 1'
         self.cpt.run()
         print 'Finished (cpt)'
