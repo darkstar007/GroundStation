@@ -52,12 +52,16 @@ class Receiver(gr.top_block):
         self.freq = frequency
         self.port = port
         
-        self.osmosdr_source = osmosdr.source( args="nchan=" + str(1) + " " + "rtl=00001001"  )
+        self.osmosdr_source = osmosdr.source( args="nchan=" + str(1) )
         self.osmosdr_source.set_sample_rate(self.sample_rate)
         self.osmosdr_source.set_center_freq(self.freq, 0)
         self.osmosdr_source.set_freq_corr(freq_corr, 0)
         self.osmosdr_source.set_gain_mode(0, 0)
         self.osmosdr_source.set_gain(rf_gain, 0)
+        self.osmosdr_source.set_if_gain(20, 0)
+        self.osmosdr_source.set_bb_gain(20, 0)
+        self.osmosdr_source.set_antenna("", 0)
+        self.osmosdr_source.set_bandwidth(0, 0)
         self.blks2_tcp_sink = grc_blks2.tcp_sink(
             itemsize=gr.sizeof_gr_complex*1,
             addr="127.0.0.1",

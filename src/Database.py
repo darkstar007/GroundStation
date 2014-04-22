@@ -132,6 +132,7 @@ class Database():
                 (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
                 (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
                 (('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (2408.00e6, 2), (145.860e6, 13)]),
+                (('KickSat', 'KickSat', 99902), [(437.505e6,0)]),
             ]
 
             count = 0
@@ -174,6 +175,7 @@ class Database():
                 ('FUNCUBE', 1, 0),
                 ('Eagle-2', 1, 0),
                 ('Triton-1', 1, 0),
+                ('KickSat', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
@@ -197,7 +199,7 @@ class Database():
         try:
             #self.conn.execute('DROP TABLE ephemeris')
             #self.conn.commit()
-            self.conn.execute('CREATE TABLE ephemeris (fname text, line1 text, line2 text, line3 text, ts timestamp, epoch timestamp)')
+            self.conn.execute('CREATE TABLE ephemeris (fname text, id int unique, line1 text unique, line2 text, line3 text, ts timestamp, epoch timestamp)')
             self.conn.execute('CREATE INDEX fname_idx ON ephemeris(fname)')
             self.conn.execute('CREATE INDEX line1_idx ON ephemeris(line1)')
             self.conn.execute('CREATE INDEX epoch_idx ON ephemeris(epoch)')
@@ -231,7 +233,7 @@ class Database():
             return ([m[0] for m in res])
 
     def getTLE(self, name):
-        self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name',
+        self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name LIMIT 1',
                           (name,))
         res = self.curs.fetchall()
         if len(res) == 0:
@@ -326,37 +328,18 @@ class Database():
                 lines += data2.readlines()
                 if len(lines) % 3 != 0:
                     raise Exception("We didn't get a multiple of 3 lines from the website for cubesat.txt/kepler.txt!!")
-#                lines += ['Aeneas\r\n',
-#                          '1 38760U 12048C   13259.33604411 +.00006211 +00000-0 +57398-3 0 02540\r\n',
-#                          '2 38760 064.6714 351.2592 0187483 185.7772 174.1116 14.83014109042614\r\n',
-#                          '1 38760U 12048C   14079.39646307 +.00009660 +00000-0 +88576-3 0 04429\r\n',
-#                          '2 38760 064.6685 139.5679 0156105 125.0295 236.5472 14.86485739070082\r\n',
-#                          'CSSWE\r\n',
-#                          '1 38761U 12048D   13259.36114140 +.00002848 +00000-0 +28029-3 0 02562\r\n',
-#                          '2 38761 064.6738 352.3888 0191213 185.3639 174.6214 14.81511081042450\r\n',
-#                          '1 38761U 12048D   14079.43361966 +.00004662 +00000-0 +46382-3 0 04314\r\n',
-#                          '2 38761 064.6750 142.7450 0165231 125.1902 236.4743 14.83186789069881\r\n',
-#                          'CXBN\r\n',
-#                          '1 38762U 12048E   13259.34836909 +.00002765 +00000-0 +27347-3 0 02486\r\n',
-#                          '2 38762 064.6736 352.8154 0192907 185.6754 174.2151 14.81180259042446\r\n',
-#                          '1 38762U 12048E   14079.33313645 +.00004697 +00000-0 +46594-3 0 04206\r\n',
-#                          '2 38762 064.6757 143.7670 0170272 126.3388 235.3237 14.82725521069851\r\n',
-#                          'CP5\r\n',
-#                          '1 38763U 12048F   13259.24883440 +.00003874 +00000-0 +37148-3 0 02536\r\n',
-#                          '2 38763 064.6724 352.4131 0190656 185.7738 174.1174 14.81920389042548\r\n',
-#                          '1 38763U 12048F   14079.44844606 +.00005802 +00000-0 +56375-3 0 04381\r\n',
-#                          '2 38763 064.6707 141.8127 0163023 125.4485 236.1918 14.84038049070005\r\n',
-#                          ]
-
-                
+            done = []
             for x in xrange(len(lines) / 3):
-                try:
-                    m = ephem.readtle(lines[x*3], lines[x*3+1], lines[x*3+2])
-                    self.curs.execute("INSERT INTO ephemeris(fname, line1, line2, line3, epoch, ts)  VALUES(?, ?, ?, ?, ?, datetime('now'))",
-                                      (fname, lines[x*3].strip(), lines[x*3+1].strip(), lines[x*3+2].strip(), m._epoch.datetime()))
-                except Exception, e:
-                    print 'Barfed for sat ',lines[x*3],'in file',fname
-                    print e
+                if lines[x*3].strip() not in done:
+                    try:
+                        m = ephem.readtle(lines[x*3], lines[x*3+1], lines[x*3+2])
+                        self.curs.execute("INSERT INTO ephemeris(fname, id, line1, line2, line3, epoch, ts)  VALUES(?, ?, ?, ?, ?, ?, datetime('now'))",
+                                          (fname, m.catalog_number, lines[x*3].strip(), lines[x*3+1].strip(), lines[x*3+2].strip(),
+                                           m._epoch.datetime()))
+                        done.append(lines[x*3].strip())
+                    except Exception, e:
+                        print 'Barfed for sat ',lines[x*3],'in file',fname
+                        print e
             self.conn.commit()
         else:
             print 'Just using existing data for ',fname
