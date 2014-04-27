@@ -26,6 +26,7 @@ from gnuradio import blocks, analog, filter
 from gnuradio.eng_option import eng_option
 from grc_gnuradio import blks2 as grc_blks2
 from grc_gnuradio import wxgui as grc_wxgui
+from gnuradio.wxgui import forms
 from gnuradio.wxgui import fftsink2
 from optparse import OptionParser
 import SimpleXMLRPCServer
@@ -106,6 +107,7 @@ class ChannelDownsample(gr.hier_block2):
         
         self.sample_rate = sample_rate
         self.freq_offset = frequency_offset
+        self.fine_freq_offset = 0.0
         self.fname = filename_raw
         self.decim = 8
         if isinstance(when, dict):
@@ -137,7 +139,7 @@ class ChannelDownsample(gr.hier_block2):
         self.low_pass_filter = filter.fir_filter_ccf(self.decim,
                                                      filter.firdes.low_pass(1, sample_rate, 120000, 5000,
                                                                             filter.firdes.WIN_HAMMING, 6.76))
-        self.sig_source = analog.sig_source_c(sample_rate, analog.GR_COS_WAVE, -(self.freq_offset), 1, 0)
+        self.sig_source = analog.sig_source_c(sample_rate, analog.GR_COS_WAVE, -(self.freq_offset + self.fine_freq_offset), 1, 0)
         self.mult1 = blocks.multiply_vcc(1)
 
         self.file_sink_raw = blocks.file_sink(gr.sizeof_gr_complex*1, str(filename_raw))
@@ -152,6 +154,10 @@ class ChannelDownsample(gr.hier_block2):
         self.connect((self.mult2, 0), (self.wxgui_fftsink0, 0))
         self.connect((self.mult2, 0), self)
 
+    def set_freq(self, fine_freq_offset):
+        self.fine_freq_offset = fine_freq_offset
+        self.sig_source.set_frequency(-(self.freq_offset + self.fine_freq_offset))
+        
 class ChannelDemodFM(gr.hier_block2):
     def __init__(self, win, sat_name, mode_name, nbfm = True):
         gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" "+str(mode_name)+" FM",
@@ -266,7 +272,7 @@ class ChannelDemodSSB(gr.hier_block2):
         self.connect((self.multiply_const_64, 0), self)
 
 class ChannelAudio(gr.hier_block2):
-    def __init__(self, win, sat_name, audio_fname, pipe_fname = None, rec_gain = 50000, af_gain = 0.1):
+    def __init__(self, win, sat_name, audio_fname, pipe_fname = None, rec_gain = 50000, af_gain = 0.3):
         gr.hier_block2.__init__(self, "Channel "+str(sat_name)+" Audio",
                                 gr.io_signature(1, 1, gr.sizeof_gr_complex),
                                 gr.io_signature(0, 0, 0))
@@ -327,6 +333,10 @@ class ChannelAudio(gr.hier_block2):
         self.connect((self.rational_resampler_8k, 0), (self.multiply_const_wav_gain, 0))
         self.connect((self.multiply_const_wav_gain, 0), (self.wavfile_sink, 0))
 
+    def set_volume(self, vol):
+        self.af_gain = vol
+        self.multiply_const_af_gain.set_k((self.af_gain,))
+        
 class ReceiverStage1(gr.hier_block2):
     def __init__(self, win, filename_raw, sample_rate):
         gr.hier_block2.__init__(self, "Receiver Stage 1",
@@ -390,7 +400,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.active_channels = []
         self.port = 9010
         
-    def add_channel(self, channel, args, kwords):
+    def add_channel(self, args, kwords):
         #self.stop()
         #self.wait()
 
@@ -398,7 +408,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.lock()
         kwords['port'] = self.port
 
-        p = self.run_channel(channel, args, kwords)
+        p = self.run_channel(args, kwords)
         print 'made newchan'
         #time.sleep(1.0)
         print 'Adding sink to port', self.port, 'in Base_Rx.add_channel'
@@ -420,7 +430,7 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.port +=1
         return idx
 
-    def run_channel(self, channel, args, kwords):
+    def run_channel(self, args, kwords):
         print 'make chan'
         tmp = []
         for x in args:
@@ -430,7 +440,7 @@ class Base_RX(grc_wxgui.top_block_gui):
                 tmp.append(tmp2)
             else:
                 tmp.append(x)
-        proc = Popen(['python', 'run_channel.py', str(channel.__name__), cjson.encode(tmp), cjson.encode(kwords)], bufsize=-1)
+        proc = Popen(['python', 'run_channel.py', cjson.encode(tmp), cjson.encode(kwords)], bufsize=-1)
         print 'run chan', proc.pid
         #newchan.Run()
         print 'completed chan'
@@ -445,13 +455,13 @@ class Base_RX(grc_wxgui.top_block_gui):
         self.active_channels[idx]['Process'].terminate()
         print 'setting',idx,'to none'
         self.active_channels[idx] = None
-        
-class SSB_RX_Channel(grc_wxgui.top_block_gui):
-    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
+
+class Demod_RX_Channel(grc_wxgui.top_block_gui):
+    def __init__(self, type, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
                  port = 0, pipe_fname = None, sample_rate=2048000,
                  frequency_offset = 0, filename_raw = 'pants_raw_ssb.dat', audio = True):
 
-        grc_wxgui.top_block_gui.__init__(self, title = "SSB Channel "+sat_name)
+        grc_wxgui.top_block_gui.__init__(self, title = str(type)+" Channel "+sat_name)
         _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
@@ -463,11 +473,45 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
             server=False,
             )
         self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
-
+        
+        self.freq_offset = 0.0
+        self.freq_slider = forms.slider(
+            parent=self.GetWin(),
+            #sizer=_fine_freq_0_sizer,
+            value=self.freq_offset,
+            callback=self.set_freq,
+            minimum=-5000,
+            maximum=5000,
+            num_steps=1000,
+            style=wx.SL_HORIZONTAL,
+            cast=float,
+            proportion=1)
+        self.Add(self.freq_slider)
+        
+        if audio:
+            self.volume = 0.3
+            self.vol_slider = forms.slider(
+        	parent=self.GetWin(),
+        	#sizer=_fine_freq_0_sizer,
+        	value=self.volume,
+        	callback=self.set_volume,
+        	minimum=0,
+        	maximum=5,
+        	num_steps=500,
+        	style=wx.SL_HORIZONTAL,
+        	cast=float,
+        	proportion=1)
+            self.Add(self.vol_slider)
+            
         self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
                                           frequency, line1, line2, lat, lon, alt, when)
         self.Add(self.chandown.wxgui_fftsink0.win)
-        self.demod = ChannelDemodSSB(self.GetWin(), sat_name, mode_name)
+        
+        if type == 'SSB':
+            self.demod = ChannelDemodSSB(self.GetWin(), sat_name, mode_name)
+        else:
+            self.demod = ChannelDemodFM(self.GetWin(), sat_name, mode_name)
+            
         self.Add(self.demod.fftsink_audio.win)
         if audio:
             self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
@@ -479,37 +523,80 @@ class SSB_RX_Channel(grc_wxgui.top_block_gui):
         self.connect(self.chandown, self.demod)
         self.connect(self.demod, self.audio)
 
-class FM_RX_Channel(grc_wxgui.top_block_gui):
-    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
-                 port = 0, pipe_fname = None, sample_rate=2048000,
-                 frequency_offset = 0, filename_raw = 'pants_raw_fm.dat', audio = True):
+    def set_volume(self, vol):
+        self.volume = vol
+        self.audio.set_volume(self.volume)
+        
 
-        grc_wxgui.top_block_gui.__init__(self, title = "FM Channel "+sat_name)
-        _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
-        self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
+    def set_freq(self, freq):
+        self.freq_offset = freq
+        self.chandown.set_freq(freq)
+        
+##class SSB_RX_Channel(grc_wxgui.top_block_gui):
+##    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
+##                 port = 0, pipe_fname = None, sample_rate=2048000,
+##                 frequency_offset = 0, filename_raw = 'pants_raw_ssb.dat', audio = True):
 
-        self.tcp_source = grc_blks2.tcp_source(
-            itemsize=gr.sizeof_gr_complex*1,
-            addr="127.0.0.1",
-            port=port,
-            server=False,
-            )
-        self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
+##        grc_wxgui.top_block_gui.__init__(self, title = "SSB Channel "+sat_name)
+##        _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
+##        self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
-        self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
-                                          frequency, line1, line2, lat, lon, alt, when)
-        self.Add(self.chandown.wxgui_fftsink0.win)
-        self.demod = ChannelDemodFM(self.GetWin(), sat_name, mode_name)
-        self.Add(self.demod.fftsink_audio.win)
-        if audio:
-            self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
-        else:
-            self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
+##        print 'Trying to connect source to port', port, 'in SSB_RX_Chan'
+##        self.tcp_source = grc_blks2.tcp_source(
+##            itemsize=gr.sizeof_gr_complex*1,
+##            addr="127.0.0.1",
+##            port=port,
+##            server=False,
+##            )
+##        self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
 
-        self.connect(self.tcp_source, self.gr_throttle)
-        self.connect(self.gr_throttle, self.chandown)
-        self.connect(self.chandown, self.demod)
-        self.connect(self.demod, self.audio)
+##        self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
+##                                          frequency, line1, line2, lat, lon, alt, when)
+##        self.Add(self.chandown.wxgui_fftsink0.win)
+##        self.demod = ChannelDemodSSB(self.GetWin(), sat_name, mode_name)
+            
+##        self.Add(self.demod.fftsink_audio.win)
+##        if audio:
+##            self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
+##        else:
+##            self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
+
+##        self.connect(self.tcp_source, self.gr_throttle)
+##        self.connect(self.gr_throttle, self.chandown)
+##        self.connect(self.chandown, self.demod)
+##        self.connect(self.demod, self.audio)
+
+##class FM_RX_Channel(grc_wxgui.top_block_gui):
+##    def __init__(self, sat_name, mode_name, audio_fname, frequency, line1, line2, lat, lon, alt, when,
+##                 port = 0, pipe_fname = None, sample_rate=2048000,
+##                 frequency_offset = 0, filename_raw = 'pants_raw_fm.dat', audio = True):
+
+##        grc_wxgui.top_block_gui.__init__(self, title = "FM Channel "+sat_name)
+##        _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
+##        self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
+
+##        self.tcp_source = grc_blks2.tcp_source(
+##            itemsize=gr.sizeof_gr_complex*1,
+##            addr="127.0.0.1",
+##            port=port,
+##            server=False,
+##            )
+##        self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
+
+##        self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
+##                                          frequency, line1, line2, lat, lon, alt, when)
+##        self.Add(self.chandown.wxgui_fftsink0.win)
+##        self.demod = ChannelDemodFM(self.GetWin(), sat_name, mode_name)
+##        self.Add(self.demod.fftsink_audio.win)
+##        if audio:
+##            self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
+##        else:
+##            self.audio = blocks.null_sink(gr.sizeof_gr_complex*1)
+
+##        self.connect(self.tcp_source, self.gr_throttle)
+##        self.connect(self.gr_throttle, self.chandown)
+##        self.connect(self.chandown, self.demod)
+##        self.connect(self.demod, self.audio)
 
 
 def run_capture(freq):

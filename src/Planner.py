@@ -93,7 +93,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = True
 
     def runCapture(self):
-        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=0.0)   #71) #-30.0e3/437.0)
+        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=-73.0)   #71) #-30.0e3/437.0)
         print 'Starting cpt 1'
         self.cpt.run()
         print 'Finished (cpt)'
@@ -110,7 +110,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         kwords['frequency_offset'] = chan.freq - self.freq
         print 'kwords',kwords
         print 'c.k', chan.kwords
-        idx = self.baseRX.add_channel(chan.type, chan.args, kwords)
+        idx = self.baseRX.add_channel(chan.args, kwords)
         chan.setRXidx(idx)
 
     def stopChannel(self, idx):
@@ -186,28 +186,28 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.chan_timer.start(self.when_ms(self.start_time))
         self.decoder_options = []
         if self.mode == '1k2_AFSK':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
             self.decoder_options.append('-A')
         elif self.mode == '9k6_FSK':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
             self.decoder_options.append('-a')
             self.decoder_options.append('FSK9600')
         elif self.mode == '9k6_GMSK':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
         elif self.mode == '19k2_GFSK':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
         elif self.mode == 'CW':
-            self.type = GnuRadio2.SSB_RX_Channel
+            self.type = 'SSB'
             self.decoder_options.append('-a')
             self.decoder_options.append('MORSE_CW')
         elif self.mode == 'APRS':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
             self.decoder_options.append('-a')
             self.decoder_options.append('AFSK1200')
         elif self.mode == 'APT':
-            self.type = GnuRadio2.FM_RX_Channel
+            self.type = 'FM'
         else:
-            self.type = GnuRadio2.SSB_RX_Channel
+            self.type = 'SSB'
 
             
         self.lat = params[6]
@@ -220,7 +220,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         
     def startChannel(self):
         base_name = '/data/matt/mygnuradio/GroundStation_'+self.name+'_'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')+'_'+self.mode
-        self.args = (self.name, self.mode,
+        self.args = (self.type, self.name, self.mode,
                      base_name+'_22050.dat',
                      self.freq, self.tle[0], self.tle[1],
                      math.degrees(self.lat), math.degrees(self.lon), self.alt,

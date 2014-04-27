@@ -132,7 +132,7 @@ class Database():
                 (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
                 (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
                 (('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (2408.00e6, 2), (145.860e6, 13)]),
-                (('KickSat', 'KickSat', 99902), [(437.505e6,0)]),
+                (('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
             ]
 
             count = 0
