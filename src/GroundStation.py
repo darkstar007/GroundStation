@@ -37,6 +37,7 @@ from PolarPlot import PolarPlot
 from PassTable import PassTable
 from Satellite import Satellite
 from Planner import Planner
+import Receivers
 
 import urllib2
 
@@ -353,7 +354,11 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         skybox.addWidget(self.polarPlot)
         tab5.setLayout(skybox)
         self.tab.addTab(tab5, "Sky")
-        
+
+        self.recPanel = Receivers.ReceiverPanel()
+        tab6 = QtGui.QWidget()
+        tab6.setLayout(self.recPanel)
+        self.tab.addTab(tab6, "Receivers")
 
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.setObjectName("mainLayout")
