@@ -473,11 +473,20 @@ class Demod_RX_Channel(grc_wxgui.top_block_gui):
             server=False,
             )
         self.gr_throttle = blocks.throttle(gr.sizeof_gr_complex*1, sample_rate)
-        
+        freq_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.freq_offset = 0.0
+        self.freq_offset_text_box = forms.text_box(
+        	parent=self.GetWin(),
+        	sizer=freq_sizer,
+        	value=self.freq_offset,
+        	callback=self.set_freq,
+        	label="Fine Frequency Offset",
+        	converter=forms.float_converter(),
+        	proportion=0)
+        
         self.freq_slider = forms.slider(
             parent=self.GetWin(),
-            #sizer=_fine_freq_0_sizer,
+            sizer=freq_sizer,
             value=self.freq_offset,
             callback=self.set_freq,
             minimum=-5000,
@@ -486,13 +495,24 @@ class Demod_RX_Channel(grc_wxgui.top_block_gui):
             style=wx.SL_HORIZONTAL,
             cast=float,
             proportion=1)
-        self.Add(self.freq_slider)
-        
+        self.GridAdd(freq_sizer, 0, 0, 1, 3)
+        #self.Add(self.freq_slider)
+
+        row = 1
         if audio:
             self.volume = 0.3
+            vol_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.vol_text_box = forms.text_box(
+        	parent=self.GetWin(),
+        	sizer=vol_sizer,
+        	value=self.volume,
+        	callback=self.set_volume,
+        	label="Volume",
+        	converter=forms.float_converter(),
+        	proportion=0)
             self.vol_slider = forms.slider(
         	parent=self.GetWin(),
-        	#sizer=_fine_freq_0_sizer,
+        	sizer=vol_sizer,
         	value=self.volume,
         	callback=self.set_volume,
         	minimum=0,
@@ -501,18 +521,21 @@ class Demod_RX_Channel(grc_wxgui.top_block_gui):
         	style=wx.SL_HORIZONTAL,
         	cast=float,
         	proportion=1)
-            self.Add(self.vol_slider)
+            #self.Add(self.vol_slider)
+            self.GridAdd(vol_sizer, row, 0, 1, 3)
+            row += 1
             
         self.chandown = ChannelDownsample(self.GetWin(), sat_name, mode_name, sample_rate, frequency_offset, filename_raw,
                                           frequency, line1, line2, lat, lon, alt, when)
-        self.Add(self.chandown.wxgui_fftsink0.win)
+        self.GridAdd(self.chandown.wxgui_fftsink0.win, row, 0, 1, 3)
+        row += 1
         
         if type == 'SSB':
             self.demod = ChannelDemodSSB(self.GetWin(), sat_name, mode_name)
         else:
             self.demod = ChannelDemodFM(self.GetWin(), sat_name, mode_name)
             
-        self.Add(self.demod.fftsink_audio.win)
+        self.GridAdd(self.demod.fftsink_audio.win, row, 0, 1, 3)
         if audio:
             self.audio = ChannelAudio(self.GetWin(), sat_name, audio_fname, pipe_fname)
         else:
@@ -525,11 +548,13 @@ class Demod_RX_Channel(grc_wxgui.top_block_gui):
 
     def set_volume(self, vol):
         self.volume = vol
+        self.vol_text_box.set_value(vol)
         self.audio.set_volume(self.volume)
         
 
     def set_freq(self, freq):
         self.freq_offset = freq
+        self.freq_offset_text_box.set_value(freq)
         self.chandown.set_freq(freq)
         
 ##class SSB_RX_Channel(grc_wxgui.top_block_gui):
