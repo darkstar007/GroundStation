@@ -11,10 +11,13 @@ except:
     print 'oh dear, no rtlsdr python library'
 
     
-class Receiver(QtGui.QWidget):
+class Receiver(QtGui.QFrame):
     def __init__(self, idx, sdrtype):
         QtGui.QWidget.__init__(self)
         grid = QtGui.QGridLayout()
+        self.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Raised)
+        self.setLineWidth(2)
+        
         self.setLayout(grid)
         if sdrtype == 'RTLSDR':
             a=ctypes.create_string_buffer(300)
@@ -25,7 +28,7 @@ class Receiver(QtGui.QWidget):
             bb=ctypes.cast(b, ctypes.POINTER(ctypes.c_ubyte))
             cc=ctypes.cast(c, ctypes.POINTER(ctypes.c_ubyte))
             
-            rtlsdr.librtlsdr.rtlsdr_get_device_usb_strings(0,aa,bb,cc)
+            rtlsdr.librtlsdr.rtlsdr_get_device_usb_strings(idx,aa,bb,cc)
             
             self.manufact = ctypes.string_at(aa)
             self.product = ctypes.string_at(bb)
@@ -59,10 +62,10 @@ class ReceiverPanel(QtGui.QGridLayout):
         for r in self.recs:
             self.addWidget(r, row, 0)
             row += 1
+        self.setRowStretch(row,1)
         
     def find_all_receivers(self):
         self.recs = []
         if have_pyrtlsdr:
             for x in xrange(rtlsdr.librtlsdr.rtlsdr_get_device_count()):
                 self.recs.append(Receiver(x, 'RTLSDR'))
-            
