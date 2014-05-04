@@ -2,7 +2,14 @@ This is just a draft at the moment - it'll grow with time and might
 even be useful one day.....
 
 I suspect that this software only works with linux - as I have no Macs
-or windows machines thats probably the way it will stay.
+or windows machines, thats probably the way it will stay unless people
+send me patches.
+
+The Receivers.py module needs to have pyrtlsdr
+(https://github.com/roger-/pyrtlsdr) installed in order to extract
+information (especially the serial number) so that dongle specific info
+(such as frequency corrections) can be stored and correctly associated
+with that dongle.
 
 
 gr-doppler

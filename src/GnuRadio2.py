@@ -183,15 +183,27 @@ class ChannelDemodFM(gr.hier_block2):
                 tau=75e-6,
                 )
         else:
-            self.fm_demod = analog.fm_demod_cf(
-                channel_rate=64000,
-                audio_decim=2,
-                deviation=45000,
-                audio_pass=17000,
-                audio_stop=18000,
-                gain=1.0,
-                tau=75e-6,
-		)
+            if mode_name == 'APT':
+                self.fm_demod = analog.fm_demod_cf(
+                    channel_rate=64000,
+                    audio_decim=2,
+                    deviation=17000,
+                    audio_pass=5300,
+                    audio_stop=5500,
+                    gain=1.0,
+                    tau=75e-6,
+                    )
+            else:
+                self.fm_demod = analog.fm_demod_cf(
+                    channel_rate=64000,
+                    audio_decim=2,
+                    deviation=45000,
+                    audio_pass=17000,
+                    audio_stop=18000,
+                    gain=1.0,
+                    tau=75e-6,
+                    )
+
         self.fftsink_audio = fftsink2.fft_sink_f(
             win,
             baseband_freq=0,
@@ -289,6 +301,8 @@ class ChannelAudio(gr.hier_block2):
         self.multiply_const_wav_gain = blocks.multiply_const_vff((0.03, ))
         self.wavfile_sink = blocks.wavfile_sink(str(audio_fname)+'.wav', 1, 8000, 8)
 
+        self.wavfile_11k_sink = blocks.wavfile_sink(str(audio_fname)+'.11025.wav', 1, 11025, 8)
+
         if pipe_fname is not None:
             self.file_sink_pipe = blocks.file_sink(gr.sizeof_short*1, str(pipe_fname))
             self.file_sink_pipe.set_unbuffered(False)
@@ -311,6 +325,12 @@ class ChannelAudio(gr.hier_block2):
             taps=None,
             fractional_bw=None,
             )
+        self.rational_resampler_11025 = filter.rational_resampler_fff(
+            interpolation=11025,
+            decimation=32000,
+            taps=None,
+            fractional_bw=None,
+            )
         
         self.audio_sink = audio.sink(48000, "pulse", True)
 
@@ -319,9 +339,10 @@ class ChannelAudio(gr.hier_block2):
         ##################################################
 
         self.connect(self, (self.rational_resampler_22050, 0))
-        self.connect(self, (self.rational_resampler_48k, 0))
+        self.connect(self, (self.rational_resampler_48k, 0))  
         self.connect(self, (self.rational_resampler_8k, 0))
-        
+        self.connect(self, (self.rational_resampler_11025, 0))
+      
         self.connect((self.rational_resampler_48k, 0), (self.multiply_const_af_gain, 0))
         self.connect((self.multiply_const_af_gain, 0), (self.audio_sink, 0))
         
@@ -333,6 +354,9 @@ class ChannelAudio(gr.hier_block2):
         self.connect((self.rational_resampler_8k, 0), (self.multiply_const_wav_gain, 0))
         self.connect((self.multiply_const_wav_gain, 0), (self.wavfile_sink, 0))
 
+        self.connect((self.rational_resampler_11025, 0), (self.wavfile_11k_sink, 0))
+        
+                     
     def set_volume(self, vol):
         self.af_gain = vol
         self.multiply_const_af_gain.set_k((self.af_gain,))

@@ -96,7 +96,7 @@ class Database():
                 (('SWISSCUBE', 'SwissCube', 35932), [(437.5050e6, 0), (437.505e6, 2)]),
                 (('BEESAT', 'BEESAT', 35933), [(436.0e6, 4), (436.00e6, 3)]),
                 (('ITUPSAT1', 'ITUpSAT1', 35935), [(437.325e6, 8), (437.325e6, 2)]),
-                (('HOPE-1 (HO-68)', 'HO-68', 36122), [(435.7900e6+600.0, 2)]),
+                (('XIWANG-1 (HOPE-1)', 'HO-68', 36122), [(435.7900e6+600.0, 2)]),
                 (('JUGNU', 'JUGNU', 37839), [(437.275e6, 2)]),
                 (('SRMSAT', 'SRMSAT', 37841), [(437.4250e6, 2)]),
                 #('RAX-2', 'RAX-2', 37853, 437.345e6),
@@ -116,7 +116,7 @@ class Database():
                 #('CUBEBUG 1', 'CubeBUG', 39153, 437.432e6, 0),
                 (('TurkSAT', 'TurkSAT', -1), [(437.225e6, -1)]),
                 #(('NEE-01 PEGASUS', 'NEE-01', 39151), 910.0e6, -1, -1, -1, -1, -1),
-                (('ESTCUBE 1', 'ESTCube-1', 39161), [(437.251e6+1e3, 2), (437.505e6, 5), (437.505e6, 8)]),
+                (('ESTCUBE 1', 'ESTCube-1', 39161), [(437.251e6+1e3, 2)]), #, (437.505e6, 5), (437.505e6, 8)]),
                 (('STRAND 1', 'STRaND-1', 39090), [(437.568e6, 4)]),
                 (('CSSWE', 'CSSWE', 38761), [(437.349e6, 4)]),
                 #('FITSAT-1 (NIWAKA)', 'FITSAT-1', 38853, 437.250e6, 2),
@@ -130,7 +130,8 @@ class Database():
                 (('DANDE', 'DANDE', 39267), [(436.75e6, 5)]),
                 (('CUSAT 1', 'CUSat', 39266), [(437.405e6, 0)]),
                 (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
-                (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
+                #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
+                (('EAGLE 2', 'Eagle-2', 39436), [(437.405e6, 0)]),
                 (('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
                 (('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
             ]
@@ -207,6 +208,12 @@ class Database():
         except Exception, e4:
             print e4
 
+        try:
+            self.conn.execute('CREATE TABLE receivers (serial text int unique, correction float, sample_rate real, defau int)')
+            self.conn.execute("INSERT INTO receivers VALUES ('11000011', -73.0, 2.048e6, 1)")
+            self.conn.commit()
+        except Exception, e5:
+            print e5
 
     def getCName(self, name):
         self.curs.execute('SELECT cname FROM sats WHERE name=?', (name.strip(),))
@@ -354,5 +361,36 @@ class Database():
         self.curs.execute('UPDATE ephemeris SET epoch=? WHERE line1=?', (etime.datetime(), cname))
         self.conn.commit()
     
+    def addReceiver(self, rec):
+        #'CREATE TABLE receivers (serial text int unique, correction float, sample_rate real, default boolean)')
+        self.curs.execute('SELECT serial FROM receivers WHERE serial=?', (rec.serial,))
+        res = self.curs.fetchall()
+        if len(res) < 1 or res == None:
+            self.curs.execute('INSERT INTO receivers(serial, correction, sample_rate, defau) VALUES(?, ?, ?, ?)'
+                              (rec.serial, rec.correction, rec.sample_rate, rec.default))
+            
+        else:
+            self.curs.execute('UPDATE receivers SET correction=?,sample_rate=?,defau=? WHERE serial=?',
+                              (rec.correction, rec.sample_rate, rec.default, rec.serial))
+        self.conn.commit()
+        
+    def getReceiver(self, serial):
+        self.curs.execute('SELECT * FROM receivers WHERE serial=?', (serial,))
+        res = self.curs.fetchall()
+        if len(res) != 0:
+            res = self.conv2dict(res[0], self.curs)
+        else:
+            res = None
+            
+        return res
 
+    def conv2dict(self, res, curs):
+        names = [x[0] for x in curs.description]
+        d = {}
+        for n in xrange(len(names)):
+            d[names[n]] = res[n]
+            
+        return d
+
+    
     

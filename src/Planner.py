@@ -165,6 +165,12 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
                     self.channels[x].hide()
                 else:
                     self.channels[x].update(fx0, scale_x, scale_y, off_x, off_y)
+        
+    def mouseDoubleClickEvent(self, evt):
+        print 'The receiver got a double click!!'
+
+    def mousePressEvent(self, evt):
+        print 'The receiver got a  click!!'
                             
 class PlannerChannel(QtGui.QGraphicsRectItem):
     def __init__(self, parent, name, mode, freq, tle, params):

@@ -323,7 +323,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         self.createPassPanel()
 
         self.polarPlot = PolarPlot()
-        self.plannerLabels = {'NOAA': 136, '2m': 144, '70cm': 436, '2GHz': 2407}
+        self.plannerLabels = {'NOAA': (136, 3.0), '2m': (144, 2.0), '70cm': (435, 4.0), '2GHz': (2407, 4.0)}
         self.planner = {}
         
         self.orbitWidget = OrbitWidget(self, self.passTable, self.polarPlot, self.planner)
@@ -340,7 +340,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         tab4 = QtGui.QTabWidget()
         stab4 = {}
         for x in self.plannerLabels.keys():
-            self.planner[x] = Planner(freq0 = self.plannerLabels[x])
+            self.planner[x] = Planner(freq0 = self.plannerLabels[x][0], bw = self.plannerLabels[x][1])
             stab4[x] = QtGui.QWidget()
             playout = QtGui.QHBoxLayout()
             playout.addWidget(self.planner[x])
@@ -355,7 +355,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         tab5.setLayout(skybox)
         self.tab.addTab(tab5, "Sky")
 
-        self.recPanel = Receivers.ReceiverPanel()
+        self.recPanel = Receivers.ReceiverPanel(self.orbitWidget.satdb)
         tab6 = QtGui.QWidget()
         tab6.setLayout(self.recPanel)
         self.tab.addTab(tab6, "Receivers")
