@@ -18,27 +18,27 @@ gr-doppler
 Firstly Gnuradio 3.7 needs to be installed & working. Then we need the
 satellite prediction library:
 
-1) Download the library from http://www.danrw.com/sgp4-satellite.php
-(there's a link to the zip file at the bottom of the page) and unzip
-it and cd into the new directory.
+1) Download the library from http://www.danrw.com/sgp4 (there's a link
+to the zip file at the bottom of the page) and unzip it and cd into
+the new directory.
 
 2) On debian unstable I had to then:
-  a. Run 'aclocal'
-  b. Run 'automake --add-missing'
-  c. Run './configure'
-  d. Change line in ./Makefile:
+  a.   Change the line in ./configure.ac:
       
- AM_CXXFLAGS = -DNDEBUG -O2 -fomit-frame-pointer -Wextra -Werror -W -Wall -Wconversion
+  AM_CXXFLAGS="-g       -O0                      -Werror -Wextra -W -Wall -Wconversion"
 
      to be:
 
- AM_CXXFLAGS = -DNDEBUG -O2 -fomit-frame-pointer -Wextra -Werror -W -Wall -Wconversion -fPIC
+  AM_CXXFLAGS="-g       -O0                      -Werror -Wextra -W -Wall -Wconversion -fPIC"
 
      this is so we can make a relocatable library (required as we will
      be making a shared library).
 
-   e. make ; make install
-   f. An include file isn't installed that needs to be, so I then had to do
+  b. Run 'aclocal'
+  c. Run 'automake --add-missing'
+  d. Run './configure'
+  e. make ; make install
+  f. An include file isn't installed that needs to be, so I then had to do
 
        'cp libsgp4/DecayedException.h /usr/local/include'
 
