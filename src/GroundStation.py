@@ -323,7 +323,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
         self.createPassPanel()
 
         self.polarPlot = PolarPlot()
-        self.plannerLabels = {'NOAA': (136, 3.0), '2m': (144, 2.0), '70cm': (435, 4.0), '2GHz': (2407, 4.0)}
+        self.plannerLabels = {'NOAA': (136, 3.0), '2m': (144, 2.0), '70cm': (435, 4.0), '2.2GHz': (2238, 4.0), '2.4GHz': (2407, 4.0)}
         self.planner = {}
         
         self.orbitWidget = OrbitWidget(self, self.passTable, self.polarPlot, self.planner)
@@ -451,6 +451,7 @@ class OrbitWidgetApp(QtGui.QMainWindow):
                            ("military.txt", "Military"),
                            ("radar.txt", "Radar"),
                            ("cubesat.txt", "Cubesat"),
+                           ("tle-new.txt", "Recent Launches"),
                            ("other.txt", "Other")]
         count = 0
         row = 0
