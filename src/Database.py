@@ -133,7 +133,7 @@ class Database():
                 #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
                 (('EAGLE 2', 'Eagle-2', 39436), [(437.405e6, 0)]),
                 (('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
-                (('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
+                #(('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
                 (('KAZEOSAT 1', 'Kazeosat-1', 39731), [(2240.125e6,-1)]),
             ]
 
@@ -177,7 +177,6 @@ class Database():
                 ('FUNCUBE', 1, 0),
                 ('Eagle-2', 1, 0),
                 ('Triton-1', 1, 0),
-                ('KickSat', 1, 0),
                 ('Kazeosat-1', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
