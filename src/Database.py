@@ -132,9 +132,13 @@ class Database():
                 (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
                 #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
                 (('EAGLE 2', 'Eagle-2', 39436), [(437.405e6, 0)]),
-                (('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
+                #(('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
                 #(('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
                 (('KAZEOSAT 1', 'Kazeosat-1', 39731), [(2240.125e6,-1)]),
+                (('QB50P1', 'QB50P1', 40025), [(145.815e6, 2), (145.815e6, 0)]),
+                (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
+                (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (1702.5e6, -1)]),
+                (('METEOR-M 2', 'Met-M 2', 40069), [(137.475e6, -1), (1702.5e6, -1)]),
             ]
 
             count = 0
@@ -176,8 +180,11 @@ class Database():
                 ('CUSat', 1, 0),
                 ('FUNCUBE', 1, 0),
                 ('Eagle-2', 1, 0),
-                ('Triton-1', 1, 0),
                 ('Kazeosat-1', 1, 0),
+                ('QB50P1', 1, 0),
+                ('QB50P2', 1, 0),
+		('Met-M 1', 1, 0),
+		('Met-M 2', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
@@ -195,6 +202,7 @@ class Database():
             self.conn.execute("INSERT INTO satgroups VALUES ('engineering.txt')")
             self.conn.execute("INSERT INTO satgroups VALUES ('science.txt')")
             self.conn.execute("INSERT INTO satgroups VALUES ('tle-new.txt')")
+            self.conn.execute("INSERT INTO satgroups VALUES ('weather.txt')")
             self.conn.commit()
         except Exception, e3:
             print e3
