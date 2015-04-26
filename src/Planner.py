@@ -44,7 +44,7 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         self.name = sat.sat.name
         self.tle = sat.tle
         self.sat = sat
-	self.z = 300
+	self.z = 30
         self.setIndex(idx)
 	self.setZValue(self.z)
 	
@@ -68,7 +68,8 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         self.params = params[:]
 
     def mousePressEvent(self, evt):
-        print 'The plannersat got a  click!!'
+        print 'The plannersat got a  click!!', self.zValue()
+
 	#if evt.button() != QtCore.Qt.RightButton:
 	#    print 'Ignored'
 	#    #QtGui.QGraphicsRectItem.mousePressEvent(self, evt)
@@ -90,7 +91,8 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = False
         self.rx_bw = bw
         self.baseRX = None
-	self.z = 300
+	self.z = 1
+	self.setZValue(self.z)
 	
     def setParams(self, time, duration, freq):
         self.start_time = time
@@ -193,11 +195,11 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
 	    
 class PlannerChannel(QtGui.QGraphicsRectItem):
     def __init__(self, parent, name, mode, freq, tle, params):
-        QtGui.QGraphicsRectItem.__init__(self, parent = parent)
+        QtGui.QGraphicsRectItem.__init__(self, scene = parent.scene())
         brush = QtGui.QBrush()
         
         brush.setStyle(QtCore.Qt.SolidPattern)
-        brush.setColor(QtGui.QColor(240, 40, 40, 200))
+        brush.setColor(QtGui.QColor(240, 40, 40, 255))
 
         self.setBrush(brush)
         self.name = name.replace(' ', '_').replace('/', '_')  # sanitise the name a little
@@ -240,7 +242,8 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.alt = params[8]
         self.tle = tle
         self.parent = parent
-	self.z = 1400
+	self.z = 100.0
+	self.setZValue(self.z)
         self.decoder = None
         
     def startChannel(self):
@@ -313,6 +316,8 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
     def mouseDoubleClickEvent(self, evt):
         print 'The channel got a double click!!'
 
+    def mousePressEvent(self, evt):
+        print 'The channel got a  click!!'
         
 class Planner(QtGui.QGraphicsView):
     def __init__(self, parent = None, freq0 = 144, bw = 3):
