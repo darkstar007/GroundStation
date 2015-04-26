@@ -376,7 +376,7 @@ class Database():
         self.curs.execute('SELECT serial FROM receivers WHERE serial=?', (rec.serial,))
         res = self.curs.fetchall()
         if len(res) < 1 or res == None:
-            self.curs.execute('INSERT INTO receivers(serial, correction, sample_rate, defau) VALUES(?, ?, ?, ?)'
+            self.curs.execute('INSERT INTO receivers(serial, correction, sample_rate, defau) VALUES(?, ?, ?, ?)',
                               (rec.serial, rec.correction, rec.sample_rate, rec.default))
             
         else:
