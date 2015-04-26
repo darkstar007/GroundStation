@@ -1,5 +1,5 @@
 #
-# Copyright 2013 Matthew Nottingham
+# Copyright 2013/2015 Matthew Nottingham
 #
 # This file is part of GroundStation
 #

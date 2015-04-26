@@ -1,3 +1,23 @@
+#
+# Copyright 2013/2015 Matthew Nottingham
+#
+# This file is part of GroundStation
+#
+# GroundStation is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+#
+# GroundStation is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GroundStation; see the file COPYING.  If not, write to
+# the Free Software Foundation, Inc., 51 Franklin Street,
+# Boston, MA 02110-1301, USA.
+#
 
 from PyQt4 import QtGui
 from PyQt4 import QtCore
@@ -81,6 +101,7 @@ class ReceiverPanel(QtGui.QGridLayout):
     def __init__(self, db):
         QtGui.QGridLayout.__init__(self)
         self.setObjectName('ReceiverPanel')
+        self.recs = []
         self.find_all_receivers(db)
 
         row = 0
@@ -90,7 +111,6 @@ class ReceiverPanel(QtGui.QGridLayout):
         self.setRowStretch(row,1)
         
     def find_all_receivers(self, db):
-        self.recs = []
         if have_pyrtlsdr:
             for x in xrange(rtlsdr.librtlsdr.rtlsdr_get_device_count()):
                 self.recs.append(Receiver(x, 'RTLSDR', db))

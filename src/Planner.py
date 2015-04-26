@@ -44,9 +44,10 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         self.name = sat.sat.name
         self.tle = sat.tle
         self.sat = sat
-
+	self.z = 300
         self.setIndex(idx)
-
+	self.setZValue(self.z)
+	
     def setIndex(self, idx):
         if self.sat.mode[idx] == 'APRS':
             self.brush.setColor(QtGui.QColor(240, 10, 210, 100))
@@ -65,7 +66,16 @@ class PlannerSat(QtGui.QGraphicsRectItem):
         
     def setParams(self, params):
         self.params = params[:]
-        
+
+    def mousePressEvent(self, evt):
+        print 'The plannersat got a  click!!'
+	#if evt.button() != QtCore.Qt.RightButton:
+	#    print 'Ignored'
+	#    #QtGui.QGraphicsRectItem.mousePressEvent(self, evt)
+	#    QtCore.QEvent.ignore(evt)
+	#else:
+	#    print 'woohoo'
+
 class PlannerReceiver(QtGui.QGraphicsRectItem):
     def __init__(self, scene, bw):
         QtGui.QGraphicsRectItem.__init__(self, scene = scene)
@@ -74,12 +84,14 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         brush.setStyle(QtCore.Qt.SolidPattern)
         brush.setColor(QtGui.QColor(140, 240, 140, 100))
 
+	#self.setAcceptedMouseButtons(QtCore.Qt.RightButton)
         self.setBrush(brush)
         self.channels = []
         self.ready = False
         self.rx_bw = bw
         self.baseRX = None
-        
+	self.z = 300
+	
     def setParams(self, time, duration, freq):
         self.start_time = time
         self.duration = duration
@@ -93,7 +105,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = True
 
     def runCapture(self):
-        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=-73.0)   #71) #-30.0e3/437.0)
+        self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=54)  #-73.0)   #71) #-30.0e3/437.0)
         print 'Starting cpt 1'
         self.cpt.run()
         print 'Finished (cpt)'
@@ -160,18 +172,25 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
             w = self.rx_bw * scale_x
             x = (self.freq - (fx0 * 1e6)) * scale_x + off_x - w/2
             self.setRect(x, max(y, off_y), w, h)
-            for x in xrange(len(self.channels)):
+	    self.setZValue(self.z)
+	    for x in xrange(len(self.channels)):
                 if ephem.now() > self.channels[x].stop_time:
                     self.channels[x].hide()
                 else:
                     self.channels[x].update(fx0, scale_x, scale_y, off_x, off_y)
         
-    def mouseDoubleClickEvent(self, evt):
-        print 'The receiver got a double click!!'
+    #def mouseDoubleClickEvent(self, evt):
+    #    print 'The receiver got a double click!!'
 
     def mousePressEvent(self, evt):
         print 'The receiver got a  click!!'
-                            
+	if evt.button() != QtCore.Qt.RightButton:
+	    print 'Ignored'
+	    QtGui.QGraphicsRectItem.mousePressEvent(self, evt)
+	    #QtCore.QEvent.ignore(evt)
+	else:
+	    print 'woohoo'
+	    
 class PlannerChannel(QtGui.QGraphicsRectItem):
     def __init__(self, parent, name, mode, freq, tle, params):
         QtGui.QGraphicsRectItem.__init__(self, parent = parent)
@@ -221,7 +240,7 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         self.alt = params[8]
         self.tle = tle
         self.parent = parent
-                
+	self.z = 1400
         self.decoder = None
         
     def startChannel(self):
@@ -289,7 +308,8 @@ class PlannerChannel(QtGui.QGraphicsRectItem):
         w = 6
         x = (self.freq - (fx0 * 1e6)) * scale_x + off_x - w/2
         self.setRect(x, max(y, off_y), w, h)
-
+	self.setZValue(self.z)
+	
     def mouseDoubleClickEvent(self, evt):
         print 'The channel got a double click!!'
 
@@ -298,6 +318,7 @@ class Planner(QtGui.QGraphicsView):
     def __init__(self, parent = None, freq0 = 144, bw = 3):
         QtGui.QGraphicsView.__init__(self, parent)
         self.setScene(QtGui.QGraphicsScene())
+	self.setInteractive(True)
         self.drawAxis()
         self.freq_labels = {}
         self.time_labels = {}
@@ -413,13 +434,18 @@ class Planner(QtGui.QGraphicsView):
             
     def mousePressEvent(self, evt):
         pos = evt.pos()
-        self.rx.append(PlannerReceiver(scene=self.scene(), bw = self.default_rx_bw))
-        self.rx[-1].setRect(pos.x() - (self.default_rx_bw * self.scale_x / 2.0),
-                            pos.y() + self.verticalScrollBar().value(),
-                            self.default_rx_bw * self.scale_x,                   1)
-        self.rx[-1].show()
-        self.editing = len(self.rx) - 1
-        print 'press', self.rx[-1].rect()
+	if self.itemAt(pos) == None:
+	    self.rx.append(PlannerReceiver(scene=self.scene(), bw = self.default_rx_bw))
+	    self.rx[-1].setRect(pos.x() - (self.default_rx_bw * self.scale_x / 2.0),
+				pos.y() + self.verticalScrollBar().value(),
+				self.default_rx_bw * self.scale_x,                   1)
+	    self.rx[-1].show()
+	    self.editing = len(self.rx) - 1
+	    print 'press', self.rx[-1].rect()
+	else:
+	    #QtCore.QEvent.ignore(evt)
+	    QtGui.QGraphicsView.mousePressEvent(self, evt)
+	    self.editing = None
         
     def mouseReleaseEvent(self, evt):
         if self.editing is not None:
@@ -448,12 +474,19 @@ class Planner(QtGui.QGraphicsView):
                 self.rx[self.editing] = None
                 self.rx = self.rx[:-1]
                 self.editing = None
-            
+	else:
+	    QtGui.QGraphicsView.mouseReleaseEvent(self, evt)
+	    #QtCore.QEvent.ignore(evt)
+	    
     def mouseMoveEvent(self, evt):
-        rect = self.rx[self.editing].rect()
-        pos = evt.pos()
-        self.rx[self.editing].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
-
+	if self.editing is not None:
+	    rect = self.rx[self.editing].rect()
+	    pos = evt.pos()
+	    self.rx[self.editing].setRect(rect.x(), rect.y(), rect.width(), pos.y()-rect.y()+ self.verticalScrollBar().value())
+	else:
+	    #QtCore.QEvent.ignore(evt)
+	    pass
+	
     def cleanup(self):
         print 'In cleanup'
         for r in self.rx:
