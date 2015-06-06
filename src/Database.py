@@ -139,7 +139,7 @@ class Database():
                 (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
                 (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
                 (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
-		(('ULTRASat8', 'LightSail', 90727), [(437.435e6, 5)]),
+		(('ULTRASat7', 'LightSail', 90726), [(437.435e6, 5)]),
             ]
 
             count = 0
@@ -348,9 +348,9 @@ class Database():
                 if len(lines) % 3 != 0:
                     raise Exception("We didn't get a multiple of 3 lines from the website for cubesat.txt/kepler.txt!!")
 
-		data3 = urllib2.urlopen("http://sail.planetary.org/tles/live.txt")
-		lines += ['OLDLightSail\r\n']
-		lines += data3.readlines()
+		#data3 = urllib2.urlopen("http://sail.planetary.org/tles/live.txt")
+		#lines += ['OLDLightSail\r\n']
+		#lines += data3.readlines()
 		
             done = []
             for x in xrange(len(lines) / 3):
