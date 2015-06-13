@@ -139,7 +139,8 @@ class Database():
                 (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
                 (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
                 (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
-		(('ULTRASat7', 'LightSail', 90726), [(437.435e6, 5)]),
+		(('LIGHTSAIL-A', 'LightSail', 40661), [(437.435e6, 5)]),
+		(('UNISAT-6', 'Unisat-6', 40012), [(437.426e6, 5)]),
             ]
 
             count = 0
@@ -187,6 +188,7 @@ class Database():
 		('Met-M 1', 1, 0),
 		('Met-M 2', 1, 0),
 		('LightSail', 1, 0),
+		('Unisat-6', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
