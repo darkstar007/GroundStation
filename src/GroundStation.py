@@ -30,7 +30,7 @@ import numpy as np
 import math
 import ephem
 import datetime
-import Image
+from PIL import Image
 import time
 from Database import Database
 from PolarPlot import PolarPlot

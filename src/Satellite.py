@@ -194,7 +194,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         midp=[c*x0, 0, -s*x0]
         
         # rotate about z axis by  sat.sublon
-        if self.footprintPos == None:
+        if type(self.footprintPos) != np.ndarray and self.footprintPos == None:
             self.footprintPos = np.zeros((vert.shape[0], 2), np.float)
             
         c = math.cos(self.sat.sublong)
@@ -239,7 +239,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         #sat = ephem.EarthSatellite(self.sat)
 
         n = ephem.Date(ephem.now() - ephem.minute * 10)
-        if self.groundTrackPos == None:
+        if type(self.groundTrackPos) != np.ndarray and self.groundTrackPos == None:
             self.groundTrackPos = np.zeros((250,2), np.float)
         
         for t in xrange(self.groundTrackPos.shape[0]):

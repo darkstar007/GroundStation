@@ -139,7 +139,6 @@ class Database():
                 (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
                 (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
                 (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
-		(('LIGHTSAIL-A', 'LightSail', 40661), [(437.435e6, 5)]),
 		(('UNISAT-6', 'Unisat-6', 40012), [(437.426e6, 5)]),
             ]
 
@@ -187,7 +186,6 @@ class Database():
                 ('QB50P2', 1, 0),
 		('Met-M 1', 1, 0),
 		('Met-M 2', 1, 0),
-		('LightSail', 1, 0),
 		('Unisat-6', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
@@ -348,12 +346,8 @@ class Database():
                 data2 = urllib2.urlopen("http://mstl.atl.calpoly.edu/~ops/keps/kepler.txt")
                 lines += data2.readlines()
                 if len(lines) % 3 != 0:
-                    raise Exception("We didn't get a multiple of 3 lines from the website for cubesat.txt/kepler.txt!!")
+                    raise Exception("We didn't get a multiple of 3 lines from the website for http://mstl.atl.calpoly.edu/~ops/keps/kepler.txt!!")
 
-		#data3 = urllib2.urlopen("http://sail.planetary.org/tles/live.txt")
-		#lines += ['OLDLightSail\r\n']
-		#lines += data3.readlines()
-		
             done = []
             for x in xrange(len(lines) / 3):
                 if lines[x*3].strip() not in done:
