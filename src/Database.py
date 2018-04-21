@@ -131,7 +131,7 @@ class Database():
                 (('CUSAT 1', 'CUSat', 39266), [(437.405e6, 0)]),
                 (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
                 #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
-                (('EAGLE 2', 'Eagle-2', 39436), [(437.405e6, 0)]),
+                (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0)]),
                 #(('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
                 #(('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
                 (('KAZEOSAT 1', 'Kazeosat-1', 39731), [(2240.125e6,-1)]),
@@ -139,6 +139,7 @@ class Database():
                 (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
                 (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
                 (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
+		(('UNISAT-6', 'Unisat-6', 40012), [(437.426e6, 5)]),
             ]
 
             count = 0
@@ -185,6 +186,7 @@ class Database():
                 ('QB50P2', 1, 0),
 		('Met-M 1', 1, 0),
 		('Met-M 2', 1, 0),
+		('Unisat-6', 1, 0),
             ]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
@@ -344,7 +346,8 @@ class Database():
                 data2 = urllib2.urlopen("http://mstl.atl.calpoly.edu/~ops/keps/kepler.txt")
                 lines += data2.readlines()
                 if len(lines) % 3 != 0:
-                    raise Exception("We didn't get a multiple of 3 lines from the website for cubesat.txt/kepler.txt!!")
+                    raise Exception("We didn't get a multiple of 3 lines from the website for http://mstl.atl.calpoly.edu/~ops/keps/kepler.txt!!")
+
             done = []
             for x in xrange(len(lines) / 3):
                 if lines[x*3].strip() not in done:

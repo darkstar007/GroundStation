@@ -30,7 +30,7 @@ list(APPEND doppler_sources
 )
 
 add_library(gnuradio-doppler SHARED ${doppler_sources})
-target_link_libraries(gnuradio-doppler ${Boost_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} sgp4)
+target_link_libraries(gnuradio-doppler ${Boost_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} sgp4s)
 set_target_properties(gnuradio-doppler PROPERTIES DEFINE_SYMBOL "gnuradio_doppler_EXPORTS")
 
 ########################################################################
