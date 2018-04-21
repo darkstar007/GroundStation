@@ -57,7 +57,7 @@ class Receiver(gr.top_block):
         self.osmosdr_source.set_sample_rate(self.sample_rate)
         self.osmosdr_source.set_center_freq(self.freq, 0)
         self.osmosdr_source.set_freq_corr(freq_corr, 0)
-        self.osmosdr_source.set_gain_mode(0, 0)
+        self.osmosdr_source.set_gain_mode(False, 0)
         self.osmosdr_source.set_gain(rf_gain, 0)
         self.osmosdr_source.set_if_gain(20, 0)
         self.osmosdr_source.set_bb_gain(20, 0)
@@ -332,7 +332,7 @@ class ChannelAudio(gr.hier_block2):
             fractional_bw=None,
             )
         
-        self.audio_sink = audio.sink(48000, "pulse", True)
+        self.audio_sink = audio.sink(sampling_rate=48000, ok_to_block=True)
 
         ##################################################
         # Connections
@@ -413,7 +413,7 @@ class ReceiverStage1(gr.hier_block2):
 class Base_RX(grc_wxgui.top_block_gui):
     def __init__(self, filename_raw, sample_rate):
         grc_wxgui.top_block_gui.__init__(self, title = "Base Ground Station Receiver")
-        _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
+        _icon_path = "/usr/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
         self.front = ReceiverStage1(self.GetWin(), filename_raw, sample_rate)
@@ -486,7 +486,7 @@ class Demod_RX_Channel(grc_wxgui.top_block_gui):
                  frequency_offset = 0, filename_raw = 'pants_raw_ssb.dat', audio = True):
 
         grc_wxgui.top_block_gui.__init__(self, title = str(type)+" Channel "+sat_name)
-        _icon_path = "/usr/local/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
+        _icon_path = "/usr/share/icons/hicolor/32x32/apps/gnuradio-grc.png"
         self.SetIcon(wx.Icon(_icon_path, wx.BITMAP_TYPE_ANY))
 
         print 'Trying to connect source to port', port, 'in SSB_RX_Chan'
