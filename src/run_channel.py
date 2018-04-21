@@ -19,8 +19,8 @@
 # Boston, MA 02110-1301, USA.
 #
 
-from GnuRadio2 import Demod_RX_Channel
 import sys
+from GnuRadio2 import Demod_RX_Channel
 import cjson
 
 print sys.argv
@@ -28,12 +28,12 @@ args_orig = cjson.decode(sys.argv[1])
 kwords = cjson.decode(sys.argv[2])
 print args_orig, kwords
 
-args=[]
+args = []
 #if sys.argv[1] == 'SSB_RX_Channel':
 #    args.append('SSB')
 #else:
 #    args.append('FM')
-    
+
 for a in args_orig:
     if isinstance(a, str):
         args.append(a.replace('\\', ''))
@@ -44,9 +44,8 @@ for a in kwords.keys():
     if isinstance(kwords[a], str):
         kwords[a] = kwords[a].replace('\\', '')
 
-print args,kwords
+print args, kwords
 
 chan = Demod_RX_Channel(*args, **kwords)
 
 chan.Run()
-
