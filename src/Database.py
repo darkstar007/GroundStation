@@ -26,8 +26,13 @@ import datetime
 import urllib2
 import ephem
 from UTC import UTC
+import cjson
 
-class Database():
+class Database(object):
+    """
+    Simple database class.
+    """
+
     def __init__(self):
         self.baseHTTP = "http://celestrak.com/NORAD/elements/"
 
@@ -69,84 +74,121 @@ class Database():
             self.conn.execute('CREATE INDEX cname_idx ON sats(cname)')
             self.conn.execute('CREATE INDEX mode_id_idx ON sats_modes(id)')
 
-            sat_data = [
-                (('OSCAR 7 (AO-7)', 'AO-7', 7530) , [(145.9775e6, -1)]),
-                (('UOSAT 2 (UO-11)', 'UO-11', 14781), [(145.826e6, 1)]),
-                #('EYESAT-1 (AO-27)', 'AO-27', 22825, 436.795e6, -1),
-                (('ITAMSAT (IO-26)', 'IO-26', 22826), [(435.867e6, -1)]),
-                #('RADIO ROSTO (RS-15)', 'RS-15', 23439, 29.3987e6),
-                (('JAS-2 (FO-29)', 'FO-29', 24278), [(435.8e6-3e3, 2)]),
-                (('TECHSAT 1B (GO-32)', 'GO-32', 25397), [(435.3250e6, 2)]),
-                (('SEDSAT 1 (SO-33)', 'SO-33', 25509), [(437.91e6, -1)]),
-                #('ISS (ZARYA)', 'ISS', 25544, 145.825e6, 9),
-                (('ISS (ZARYA)', 'ISS', 25544), [(437.550e6, 9), (145.825e6, 9)]),
-                (('PCSAT (NO-44)', 'NO-44', 26931), [(145.8270e6, 0)]),
-                (('SAUDISAT 1C (SO-50)', 'SO-50', 27607), [(436.795e6-1.5e3, -1)]),
-                (('CUTE-1 (CO-55)', 'CO-55', 27844),[( 436.8375e6-1000.0, 2), (437.470e6, 0)]),
-                (('CUBESAT XI-IV (CO-57)', 'XI-IV', 27848), [(436.8475e6+1e3, 2), (437.490e6, 0)]),
-                (('MOZHAYETS 4 (RS-22)', 'RS-22', 27939), [(435.3520e6, 2)]),
-                (('HAMSAT (VO-52)', 'VO-52', 28650), [(145.86000e6, 2)]),
-                (('CUBESAT XI-V (CO-58)', 'XI-V', 28895), [(437.465e6-1e3, 2), (437.345e6, 0)]),
-                (('CUTE-1.7+APD II (CO-65)', 'Cute-1.7/CO-65', 32785), [(437.275e6, 2), (437.475e6, 0), (437.475e6, 4)]),
-                (('DELFI-C3 (DO-64)', 'Delfi-C3', 32789), [(145.8700e6-2e3, 6)]),
-                (('YUBILEINY (RS-30)', 'RS-30', 32953), [(435.215e6, 2)]),
-                (('PRISM', 'PRISM', 33493), [(437.25e6, 0), (437.25e6, 2), (437.25e6, 4)]),
-                (('STARS', 'STARS', 33498), [(437.3050e6, -1)]),
-                (('KKS-1', 'KKS-1', 33499), [(437.3850e6, -1)]),
-                (('SWISSCUBE', 'SwissCube', 35932), [(437.5050e6, 0), (437.505e6, 2)]),
-                (('BEESAT', 'BEESAT', 35933), [(436.0e6, 4), (436.00e6, 3)]),
-                (('ITUPSAT1', 'ITUpSAT1', 35935), [(437.325e6, 8), (437.325e6, 2)]),
-                (('XIWANG-1 (HOPE-1)', 'HO-68', 36122), [(435.7900e6+600.0, 2)]),
-                (('JUGNU', 'JUGNU', 37839), [(437.275e6, 2)]),
-                (('SRMSAT', 'SRMSAT', 37841), [(437.4250e6, 2)]),
-                #('RAX-2', 'RAX-2', 37853, 437.345e6),
-                (('MASAT 1', 'MASAT', 38081), [(437.345e6+1e3, 10), (437.345e6+1e3, 2), (437.345e6+1e3, 14)]),
-                (('AUBIESAT-1 (AO-71)', 'AubieSat', 37854), [(437.475-1e3, 2), (437.475-1e3, 0)]),
-                (('M-CUBED & EXP-1 PRIME', 'MCubed', 38051), [(437.485e6+16e3, 5)]),
-                (('LUSAT (LO-19)', 'LO-19', 20442), [(437.125e6, -1)]),
-                (('NOAA 15 [B]', 'NOAA 15', 25338), [(137.62e6, 11)]),
-                (('NOAA 17 [-]', 'NOAA 17', 27453), [(137.5e6, 11)]),
-                (('NOAA 18 [B]', 'NOAA 18', 28654), [(137.9125e6, 11)]),
-                (('NOAA 19 [+]', 'NOAA 19', 33591), [(137.1e6, 11)]),
-                (('Classic FM', 'Classic FM', -1), [(101.9e6, 12)]),
-                (('Graves', 'Graves', -1), [(143.050e6, -1)]),
-                (('Aeneas', 'Aeneas', 38760), [(437.6e6+4.5e3, 0)]),
-                #('TechEdSat', 'TechEdSat', 38854, 437.465e6, -1),
-                (('BeeSat-2', 'Beesat-2', 39136), [(435.950e6, 3)]),
-                #('CUBEBUG 1', 'CubeBUG', 39153, 437.432e6, 0),
-                (('TurkSAT', 'TurkSAT', -1), [(437.225e6, -1)]),
-                #(('NEE-01 PEGASUS', 'NEE-01', 39151), 910.0e6, -1, -1, -1, -1, -1),
-                (('ESTCUBE 1', 'ESTCube-1', 39161), [(437.251e6+1e3, 2)]), #, (437.505e6, 5), (437.505e6, 8)]),
-                (('STRAND 1', 'STRaND-1', 39090), [(437.568e6, 4)]),
-                (('CSSWE', 'CSSWE', 38761), [(437.349e6, 4)]),
-                #('FITSAT-1 (NIWAKA)', 'FITSAT-1', 38853, 437.250e6, 2),
-                #('SOMP', 'SOMP', 39134, 437.504, 2),
-                (('PicoDragon', 'PicoDragon', -1), [(437.365e6, 0)]),
-                (('ArduSat-1', 'ArduSat-1', -1), [(437.325e6, 13)]),
-                (('ArduSat-X', 'ArduSat-X', -1), [(437.345e6, 13)]),
-                (('TechEdSat-3', 'TechEdSat-3', -1), [(437.465e6, 0)]),
-                (('ROMIT1', 'Romit1', -1), [(437.505e6, 0)]),
-                (('GB3VHF', 'GB3VHF', -1), [(144.4285e6, 2)]),
-                (('DANDE', 'DANDE', 39267), [(436.75e6, 5)]),
-                (('CUSAT 1', 'CUSat', 39266), [(437.405e6, 0)]),
-                (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
-                #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
-                (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0)]),
-                #(('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
-                #(('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
-                (('KAZEOSAT 1', 'Kazeosat-1', 39731), [(2240.125e6,-1)]),
-                (('QB50P1', 'QB50P1', 40025), [(145.815e6, 2), (145.815e6, 0)]),
-                (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
-                (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
-                (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
-		(('UNISAT-6', 'Unisat-6', 40012), [(437.426e6, 5)]),
-            ]
+            #sat_data = [
+            #    (('OSCAR 7 (AO-7)', 'AO-7', 7530) , [(145.9775e6, -1)]),
+            #    (('UOSAT 2 (UO-11)', 'UO-11', 14781), [(145.826e6, 1)]),
+            #    #('EYESAT-1 (AO-27)', 'AO-27', 22825, 436.795e6, -1),
+            #    (('ITAMSAT (IO-26)', 'IO-26', 22826), [(435.867e6, -1)]),
+            #    #('RADIO ROSTO (RS-15)', 'RS-15', 23439, 29.3987e6),
+            #    (('JAS-2 (FO-29)', 'FO-29', 24278), [(435.8e6-3e3, 2)]),
+            #    (('TECHSAT 1B (GO-32)', 'GO-32', 25397), [(435.3250e6, 2)]),
+            #    (('SEDSAT 1 (SO-33)', 'SO-33', 25509), [(437.91e6, -1)]),
+            #    #('ISS (ZARYA)', 'ISS', 25544, 145.825e6, 9),
+            #    (('ISS (ZARYA)', 'ISS', 25544), [(437.550e6, 9), (145.825e6, 9)]),
+            #    (('PCSAT (NO-44)', 'NO-44', 26931), [(145.8270e6, 0)]),
+            #    (('SAUDISAT 1C (SO-50)', 'SO-50', 27607), [(436.795e6-1.5e3, -1)]),
+            #    (('CUTE-1 (CO-55)', 'CO-55', 27844),[( 436.8375e6-1000.0, 2), (437.470e6, 0)]),
+            #    (('CUBESAT XI-IV (CO-57)', 'XI-IV', 27848), [(436.8475e6+1e3, 2), (437.490e6, 0)]),
+            #    (('MOZHAYETS 4 (RS-22)', 'RS-22', 27939), [(435.3520e6, 2)]),
+            #    (('HAMSAT (VO-52)', 'VO-52', 28650), [(145.86000e6, 2)]),
+            #    (('CUBESAT XI-V (CO-58)', 'XI-V', 28895), [(437.465e6-1e3, 2), (437.345e6, 0)]),
+            #    (('CUTE-1.7+APD II (CO-65)', 'Cute-1.7/CO-65', 32785), [(437.275e6, 2), (437.475e6, 0), (437.475e6, 4)]),
+            #    (('DELFI-C3 (DO-64)', 'Delfi-C3', 32789), [(145.8700e6-2e3, 6)]),
+            #    (('YUBILEINY (RS-30)', 'RS-30', 32953), [(435.215e6, 2)]),
+            #    (('PRISM', 'PRISM', 33493), [(437.25e6, 0), (437.25e6, 2), (437.25e6, 4)]),
+            #    (('STARS', 'STARS', 33498), [(437.3050e6, -1)]),
+            #    (('KKS-1', 'KKS-1', 33499), [(437.3850e6, -1)]),
+            #    (('SWISSCUBE', 'SwissCube', 35932), [(437.5050e6, 0), (437.505e6, 2)]),
+            #    (('BEESAT', 'BEESAT', 35933), [(436.0e6, 4), (436.00e6, 3)]),
+            #    (('ITUPSAT1', 'ITUpSAT1', 35935), [(437.325e6, 8), (437.325e6, 2)]),
+            #    (('XIWANG-1 (HOPE-1)', 'HO-68', 36122), [(435.7900e6+600.0, 2)]),
+            #    (('JUGNU', 'JUGNU', 37839), [(437.275e6, 2)]),
+            #    (('SRMSAT', 'SRMSAT', 37841), [(437.4250e6, 2)]),
+            #    #('RAX-2', 'RAX-2', 37853, 437.345e6),
+            #    (('MASAT 1', 'MASAT', 38081), [(437.345e6+1e3, 10), (437.345e6+1e3, 2), (437.345e6+1e3, 14)]),
+            #    (('AUBIESAT-1 (AO-71)', 'AubieSat', 37854), [(437.475-1e3, 2), (437.475-1e3, 0)]),
+            #    (('M-CUBED & EXP-1 PRIME', 'MCubed', 38051), [(437.485e6+16e3, 5)]),
+            #    (('LUSAT (LO-19)', 'LO-19', 20442), [(437.125e6, -1)]),
+            #    (('NOAA 15 [B]', 'NOAA 15', 25338), [(137.62e6, 11)]),
+            #    (('NOAA 17 [-]', 'NOAA 17', 27453), [(137.5e6, 11)]),
+            #    (('NOAA 18 [B]', 'NOAA 18', 28654), [(137.9125e6, 11)]),
+            #    (('NOAA 19 [+]', 'NOAA 19', 33591), [(137.1e6, 11)]),
+            #    (('Classic FM', 'Classic FM', -1), [(101.9e6, 12)]),
+            #    (('Graves', 'Graves', -1), [(143.050e6, -1)]),
+            #    (('Aeneas', 'Aeneas', 38760), [(437.6e6+4.5e3, 0)]),
+            #    #('TechEdSat', 'TechEdSat', 38854, 437.465e6, -1),
+            #    (('BeeSat-2', 'Beesat-2', 39136), [(435.950e6, 3)]),
+            #    #('CUBEBUG 1', 'CubeBUG', 39153, 437.432e6, 0),
+            #    (('TurkSAT', 'TurkSAT', -1), [(437.225e6, -1)]),
+            #    #(('NEE-01 PEGASUS', 'NEE-01', 39151), 910.0e6, -1, -1, -1, -1, -1),
+            #    (('ESTCUBE 1', 'ESTCube-1', 39161), [(437.251e6+1e3, 2)]), #, (437.505e6, 5), (437.505e6, 8)]),
+            #    (('STRAND 1', 'STRaND-1', 39090), [(437.568e6, 4)]),
+            #    (('CSSWE', 'CSSWE', 38761), [(437.349e6, 4)]),
+            #    #('FITSAT-1 (NIWAKA)', 'FITSAT-1', 38853, 437.250e6, 2),
+            #    #('SOMP', 'SOMP', 39134, 437.504, 2),
+            #    (('PicoDragon', 'PicoDragon', -1), [(437.365e6, 0)]),
+            #    (('ArduSat-1', 'ArduSat-1', -1), [(437.325e6, 13)]),
+            #    (('ArduSat-X', 'ArduSat-X', -1), [(437.345e6, 13)]),
+            #    (('TechEdSat-3', 'TechEdSat-3', -1), [(437.465e6, 0)]),
+            #    (('ROMIT1', 'Romit1', -1), [(437.505e6, 0)]),
+            #    (('GB3VHF', 'GB3VHF', -1), [(144.4285e6, 2)]),
+            #    (('DANDE', 'DANDE', 39267), [(436.75e6, 5)]),
+            #    (('CUSAT 1', 'CUSat', 39266), [(437.405e6, 0)]),
+            #    (('FUNCUBE-1 (AO-73)', 'FUNCUBE', 39445), [(145.935e6, 0)]),
+            #    #(('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0), (437.405e6, 7)]), # Actually WREN tx'er
+            #    (('EAGLE 2', 'Eagle-2', 39436), [(437.505e6, 0)]),
+            #    #(('TRITON-1', 'Triton-1', 39427), [(145.815e6, 13), (145.860e6, 13)]),
+            #    #(('KICKSAT', 'KickSat', 99902), [(437.505e6,0)]),
+            #    (('KAZEOSAT 1', 'Kazeosat-1', 39731), [(2240.125e6,-1)]),
+            #    (('QB50P1', 'QB50P1', 40025), [(145.815e6, 2), (145.815e6, 0)]),
+            #    (('QB50P2', 'QB50P2', 40032), [(145.880e6, 2), (145.880e6, 0)]),
+            #    (('METEOR-M 1', 'Met-M 1', 35865), [(137.475e6, -1), (137.1e6, -1), (1702.5e6, -1)]),
+            #    (('METEOR-M 2', 'Met-M 2', 40069), [(137.1e6, -1), (137.925e6, -1), (1702.5e6, -1)]),
+	    #	(('UNISAT-6', 'Unisat-6', 40012), [(437.426e6, 5)]),
+            #]
+
+            freq = urllib2.urlopen('https://db.satnogs.org/api/transmitters/')
+            freq_data = cjson.decode(freq.read())
+            freq.close()
+
+            sats = urllib2.urlopen('https://db.satnogs.org/api/satellites/')
+            sats_data = cjson.decode(sats.read())
+            sats.close()
+
+            modes = urllib2.urlopen('https://db.satnogs.org/api/modes/')
+            modes_data = cjson.decode(modes.read())
+            modes.close()
+
+            my_mode = {}
+            for m in modes_data:
+                my_mode[str(m['id'])] = {}
+                if m['name'] == 'AFSK':
+                    my_mode[str(m['id'])]['1200.0'] = 0
+                if m['name'] == 'APT':
+                    my_mode[str(m['id'])]['None'] = 11
+                
+                
+            sat_sql_data = []
+            
+            for s in sats_data:
+                if s['status'] == 'alive':
+                    s_tmp = (s['name'], s['name'], s['norad_cat_id'])
+                    f_tmp = []
+                    for f in freq_data:
+                        if f['norad_cat_id'] == s['norad_cat_id'] and f['downlink_low'] is not None:
+                            try:
+                                f_tmp.append((f['downlink_low'], my_mode[str(f['mode_id'])][str(f['baud'])]))
+                            except Exception, e:
+                                print 'Failed to add entry for', s['name'], str(f['mode_id']), str(f['baud']), e
+                                f_tmp.append((f['downlink_low'], -1))
+                                
+                    sat_sql_data.append((s_tmp, f_tmp))
 
             count = 0
-            for sat in xrange(len(sat_data)):
-                self.conn.execute('INSERT INTO sats VALUES (?, ?, ?, ?)', sat_data[sat][0]+(sat,))
-                for m in xrange(len(sat_data[sat][1])):
-                    self.conn.execute('INSERT INTO sats_modes VALUES (?, ?, ?)', (sat,)+sat_data[sat][1][m])
+            for sat in xrange(len(sat_sql_data)):
+                self.conn.execute('INSERT INTO sats VALUES (?, ?, ?, ?)', sat_sql_data[sat][0]+(sat,))
+                for m in xrange(len(sat_sql_data[sat][1])):
+                    self.conn.execute('INSERT INTO sats_modes VALUES (?, ?, ?)', (sat,)+sat_sql_data[sat][1][m])
 
             self.conn.commit()
         except Exception, e:
@@ -155,39 +197,49 @@ class Database():
         try:
             self.conn.execute('CREATE TABLE pers (name text, display integer, grtrack integer)')
             self.conn.commit()
-            pers_data = [
-                ('NOAA 18', 1, 0),
-                ('NOAA 19', 1, 0),
-                ('VO-52', 1, 0),
-                ('FO-29', 1, 0),
-                ('ITUpSAT1', 1, 0),
-                ('ISS', 1, 1),
-                ('ESTCube-1', 1, 0),
-                ('SO-50', 1, 0),
-                ('HO-68', 1, 0),
-                ('CO-55', 1, 0),
-                ('AubieSat', 1, 0),
-                ('MASAT', 1, 0),
-                ('Cute-1.7/CO-65', 1, 0),
-                ('MCubed', 1, 0),
-                ('Prism', 1, 0),
-                ('Delfi-C3', 1, 0),
-                ('Aeneas', 1, 0),
-                ('STRaND-1', 1, 0),
-                ('CSSWE', 1, 0),
-                ('XI-IV', 1, 0),
-                ('XI-V', 1, 0),
-                ('DANDE', 1, 0),
-                ('CUSat', 1, 0),
-                ('FUNCUBE', 1, 0),
-                ('Eagle-2', 1, 0),
-                ('Kazeosat-1', 1, 0),
-                ('QB50P1', 1, 0),
-                ('QB50P2', 1, 0),
-		('Met-M 1', 1, 0),
-		('Met-M 2', 1, 0),
-		('Unisat-6', 1, 0),
-            ]
+
+            cnames = self.curs.execute('SELECT cname FROM sats')
+            cnames = self.curs.fetchall()
+            pers_data = []
+            for c in cnames:
+                if c[0] == 'ISS' or c[0] == 'NOAA 19':
+                    pers_data.append((c[0], 1, 1))
+                else:
+                    pers_data.append((c[0], 1, 0))
+                    
+            #pers_data = [
+            #    ('NOAA 18', 1, 0),
+            #    ('NOAA 19', 1, 0),
+            #    ('VO-52', 1, 0),
+            #    ('FO-29', 1, 0),
+            #    ('ITUpSAT1', 1, 0),
+            #    ('ISS', 1, 1),
+            #    ('ESTCube-1', 1, 0),
+            #    ('SO-50', 1, 0),
+            #    ('HO-68', 1, 0),
+            #    ('CO-55', 1, 0),
+            #    ('AubieSat', 1, 0),
+            #    ('MASAT', 1, 0),
+            #    ('Cute-1.7/CO-65', 1, 0),
+            #    ('MCubed', 1, 0),
+            #    ('Prism', 1, 0),
+            #    ('Delfi-C3', 1, 0),
+            #    ('Aeneas', 1, 0),
+            #    ('STRaND-1', 1, 0),
+            #    ('CSSWE', 1, 0),
+            #    ('XI-IV', 1, 0),
+            #    ('XI-V', 1, 0),
+            #    ('DANDE', 1, 0),
+            #    ('CUSat', 1, 0),
+            #    ('FUNCUBE', 1, 0),
+            #    ('Eagle-2', 1, 0),
+            #    ('Kazeosat-1', 1, 0),
+            #    ('QB50P1', 1, 0),
+            #    ('QB50P2', 1, 0),
+	    #('Met-M 1', 1, 0),
+	    #('Met-M 2', 1, 0),
+	    #	('Unisat-6', 1, 0),
+            #]
             self.conn.executemany('INSERT INTO pers VALUES (?, ?, ?)', pers_data)
             self.conn.commit()
             
@@ -227,11 +279,11 @@ class Database():
         except Exception, e5:
             print e5
 
-    def getCName(self, name):
-        self.curs.execute('SELECT cname FROM sats WHERE name=?', (name.strip(),))
+    def getName(self, cat_num):
+        self.curs.execute('SELECT cname FROM sats WHERE norad_id=?', (cat_num,))
         res = self.curs.fetchall()
         if len(res) == 0:
-            return (str(name.strip()))
+            return 'Unknown'
         else:
             return (str(res[0][0]))
 
@@ -255,6 +307,7 @@ class Database():
         self.curs.execute('SELECT line2, line3 FROM ephemeris,sats WHERE sats.cname=? and ephemeris.line1 = sats.name LIMIT 1',
                           (name,))
         res = self.curs.fetchall()
+
         if len(res) == 0:
             return (('', ''))
         else:
@@ -284,7 +337,7 @@ class Database():
     def getSatGroups(self):
         self.curs.execute('SELECT name FROM satgroups')
         res = self.curs.fetchall()
-        print 'Res', res
+
         fnames = []
         for r in res:
             fnames.append(r[0])
@@ -292,7 +345,6 @@ class Database():
 
     def setSatGroups(self, fnames):
         try:
-            print 'set fnames', fnames
             self.curs.execute('DELETE FROM satgroups')
             self.conn.commit()
             for f in fnames:
@@ -307,13 +359,11 @@ class Database():
         res = self.curs.fetchall()
         utc = UTC()
         
-        print 'Min epoch', res
         lines = []
         if res[0][0] != None:
             epc = datetime.datetime.strptime(res[0][0][:res[0][0].find('.')], '%Y-%m-%d %H:%M:%S')
             epc = epc.replace(tzinfo=utc)
             dt_epoch = datetime.datetime.now(utc) - epc
-            print 'Delta time (epoch)',dt_epoch
         else:
             dt_epoch = None
 
@@ -321,7 +371,6 @@ class Database():
             ftch = datetime.datetime.strptime(res[0][1][:res[0][1].find('.')], '%Y-%m-%d %H:%M:%S')
             ftch = ftch.replace(tzinfo=utc)
             dt_fetch = datetime.datetime.now(utc) - ftch
-            print 'Delta time (last fetch)',dt_fetch
         else:
             dt_fetch = None
 
@@ -353,8 +402,9 @@ class Database():
                 if lines[x*3].strip() not in done:
                     try:
                         m = ephem.readtle(lines[x*3], lines[x*3+1], lines[x*3+2])
+                        cname = self.getName(m.catalog_number)
                         self.curs.execute("INSERT INTO ephemeris(fname, id, line1, line2, line3, epoch, ts)  VALUES(?, ?, ?, ?, ?, ?, datetime('now'))",
-                                          (fname, m.catalog_number, lines[x*3].strip(), lines[x*3+1].strip(), lines[x*3+2].strip(),
+                                          (fname, m.catalog_number, cname, lines[x*3+1].strip(), lines[x*3+2].strip(),
                                            m._epoch.datetime()))
                         done.append(lines[x*3].strip())
                     except Exception, e:

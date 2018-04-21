@@ -113,7 +113,6 @@ class ChannelDownsample(gr.hier_block2):
         if isinstance(when, dict):
             when = datetime.datetime(when['year'], when['month'], when['day'],
                                      when['hour'], when['minute'], when['second'], when['microsecond'])
-            
         self.dop = doppler.doppler_c(line1, line2, frequency, self.sample_rate / self.decim,
                                      lat, lon, alt/1000.0,
                                      when.year, when.month, when.day, when.hour, when.minute,

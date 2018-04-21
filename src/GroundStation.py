@@ -141,7 +141,8 @@ class OrbitWidget(QtGui.QGraphicsScene):
             if lines[s][0] not in names:
                 try:
                     names.append(lines[s][0])
-                    nm = self.satdb.getCName(lines[s][0])
+                    tm = ephem.readtle('temp_name', str(lines[s][1]), str(lines[s][2]))
+                    nm = self.satdb.getName(tm.catalog_number)
                     m = ephem.readtle(nm, str(lines[s][1]), str(lines[s][2]))
                     self.eph.append(m)
                     #self.satdb.setEphemEpochTime(lines[s][0], m._epoch)

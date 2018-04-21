@@ -107,6 +107,7 @@ class PlannerReceiver(QtGui.QGraphicsRectItem):
         self.ready = True
 
     def runCapture(self):
+        # Get the number from the receiver database - why the hell doesn't it?...
         self.cpt = GnuRadio2.Receiver(self.freq, sample_rate=self.rx_bw, freq_corr=54)  #-73.0)   #71) #-30.0e3/437.0)
         print 'Starting cpt 1'
         self.cpt.run()
@@ -472,7 +473,6 @@ class Planner(QtGui.QGraphicsView):
                 for f in self.scene().items(rect):
                     print f
                     if isinstance(f, PlannerSat):
-                        print f.name, f.mode, f.freq, f.params
                         self.rx[self.editing].addChannel(f.name, f.mode, f.freq, f.tle, f.params)
             else:
                 self.rx[self.editing].hide()

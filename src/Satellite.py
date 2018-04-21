@@ -84,12 +84,10 @@ class Satellite(QtGui.QGraphicsRectItem):
             while (obs.date - ephem.now()) < 2.0:
                 tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
                 if ts is not None:
-                    if tr > tt or tr > ts:    # If sat is visible in the sky, then we get weird number out!
+                    if tr > tt or tr > ts:    # If sat is currently visible in the sky, then we get weird number out!
                         original_ts = ts
-                        print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'original'
                         self.parent.observer.date = obs.date - 45.0 * ephem.minute # lets rewind time by half an orbit
                         tr, azr, tt, altt, ts, azs = obs.next_pass(self.sat)
-                        print self.sat.name,'tr',tr,'tt',tt,'ts',ts,'fixed'
                         if ts < (original_ts - ephem.minute):   # I'm seeing the odd really weird output
                             raise Exception("bad prediction")
                     self.passList.append((tr, azr, tt, altt, ts, azs, obs.lat, obs.lon, obs.elev))
@@ -97,7 +95,7 @@ class Satellite(QtGui.QGraphicsRectItem):
                 else:
                     obs.date = obs.date + 10.0
         except Exception, e:
-            print e
+            print 'UPL:', e
             
         diff = len(self.passList * len(self.freq)) - len(self.passListPlan)
         if diff > 0:
@@ -110,7 +108,7 @@ class Satellite(QtGui.QGraphicsRectItem):
         
     def recompute(self, obs):
         if self.doDisplay:
-            if (datetime.datetime.now() - self.passListLastUpdate) > datetime.timedelta(seconds=120):
+            if (datetime.datetime.now() - self.passListLastUpdate) > datetime.timedelta(seconds=1200):
                 self.updatePassList(obs)
                 
             self.parent.passTable.update(self)
@@ -153,77 +151,81 @@ class Satellite(QtGui.QGraphicsRectItem):
             self.hide()
 
     def computeFootprint(self):
-        r0 = ephem.earth_radius
-        alt = self.sat.elevation + r0
+        if self.sat.elevation > 0.0:
+            r0 = ephem.earth_radius
+            alt = self.sat.elevation + r0
 
-        vert = np.zeros(((360/5),3), np.float)
-        r1vert = np.zeros(((360/5),3), np.float)
-        r2vert = np.zeros((3,), np.float)
+            vert = np.zeros(((360/5),3), np.float)
+            r1vert = np.zeros(((360/5),3), np.float)
+            r2vert = np.zeros((3,), np.float)
 
-        x0 = r0 * r0 / alt
-        phi = math.acos(x0 / r0)
-        y0 = r0 * math.sin(phi)
+            x0 = r0 * r0 / alt
+            phi = math.acos(x0 / r0)
+            y0 = r0 * math.sin(phi)
 
-        if (self.sat.sublat + phi) > math.pi/2 or (self.sat.sublat - phi) < -math.pi/2:
-            #print self.sat, self.sat.sublat, self.sat.sublong, math.degrees(phi)
-            self.footprintHighLat = True
+            if (self.sat.sublat + phi) > math.pi/2 or (self.sat.sublat - phi) < -math.pi/2:
+                #print self.sat, self.sat.sublat, self.sat.sublong, math.degrees(phi)
+                self.footprintHighLat = True
+            else:
+                self.footprintHighLat = False
+
+            #if (self.sat.sublong + phi) > math.pi or (self.sat.sublong - phi) < -math.pi:            
+            #    self.footprintSplit = True
+            #    print 'Spliting ',self.sat
+            #else:
+            #    self.footprintSplit = False
+
+            for i in xrange(vert.shape[0]):
+                vert[i,0] = x0
+                vert[i,1] = y0 * math.sin(math.radians(i * 5))
+                vert[i,2] = y0 * math.cos(math.radians(i * 5))
+
+            # rotate about y axis by sat.sublat
+            c = math.cos(self.sat.sublat)
+            s = math.sin(self.sat.sublat)
+            max_x = -9999999
+            min_x = 9999999
+            for i in xrange(vert.shape[0]):
+                r1vert[i,0] = c * vert[i,0] + s * vert[i,2]
+                r1vert[i,1] = vert[i, 1]
+                r1vert[i,2] = -s * vert[i,0] + c * vert[i,2]
+
+            midp=[c*x0, 0, -s*x0]
+
+            # rotate about z axis by  sat.sublon
+            if type(self.footprintPos) != np.ndarray and self.footprintPos == None:
+                self.footprintPos = np.zeros((vert.shape[0], 2), np.float)
+
+            c = math.cos(self.sat.sublong)
+            s = math.sin(self.sat.sublong)
+            midpt=[c * midp[0] - s * midp[1], s * midp[0] + c * midp[1], midp[2]]
+
+            for i in xrange(vert.shape[0]):
+                r2vert[0] = c * r1vert[i,0] - s * r1vert[i,1]
+                r2vert[1] = s * r1vert[i,0] + c * r1vert[i,1]
+                r2vert[2] = r1vert[i,2]
+
+                phi = math.asin(r2vert[2] / r0)
+                theta = math.atan2(r2vert[1], r2vert[0])
+                self.footprintPos[i,0] = ( theta + math.pi) * self.backgroundSize[0] / (2.0  *math.pi)
+                self.footprintPos[i,1] = ( phi + math.pi/2) * self.backgroundSize[1] / math.pi
+                if  self.footprintPos[i,0] > max_x:
+                    max_x = self.footprintPos[i,0]
+                if self.footprintPos[i,0] < min_x:
+                    min_x = self.footprintPos[i,0]
+
+            phi = math.asin(midpt[2] / r0)
+            theta = math.atan2(midpt[1], midpt[0])
+            midptpix = [( theta + math.pi) * self.backgroundSize[0] / (2.0  *math.pi),
+                        ( phi + math.pi/2) * self.backgroundSize[1] / math.pi]
+            self.footprintSplit = False
+            if math.fabs((min_x+max_x)/2 - midptpix[0]) > 10:
+                #print 'Splitting',self.sat,midptpix, 'Min', min_x, 'Max', max_x
+                self.footprintSplit = True
         else:
             self.footprintHighLat = False
-
-        #if (self.sat.sublong + phi) > math.pi or (self.sat.sublong - phi) < -math.pi:            
-        #    self.footprintSplit = True
-        #    print 'Spliting ',self.sat
-        #else:
-        #    self.footprintSplit = False
-
-        for i in xrange(vert.shape[0]):
-            vert[i,0] = x0
-            vert[i,1] = y0 * math.sin(math.radians(i * 5))
-            vert[i,2] = y0 * math.cos(math.radians(i * 5))
-            
-        # rotate about y axis by sat.sublat
-        c = math.cos(self.sat.sublat)
-        s = math.sin(self.sat.sublat)
-        max_x = -9999999
-        min_x = 9999999
-        for i in xrange(vert.shape[0]):
-            r1vert[i,0] = c * vert[i,0] + s * vert[i,2]
-            r1vert[i,1] = vert[i, 1]
-            r1vert[i,2] = -s * vert[i,0] + c * vert[i,2]
-
-        midp=[c*x0, 0, -s*x0]
-        
-        # rotate about z axis by  sat.sublon
-        if type(self.footprintPos) != np.ndarray and self.footprintPos == None:
-            self.footprintPos = np.zeros((vert.shape[0], 2), np.float)
-            
-        c = math.cos(self.sat.sublong)
-        s = math.sin(self.sat.sublong)
-        midpt=[c * midp[0] - s * midp[1], s * midp[0] + c * midp[1], midp[2]]
-
-        for i in xrange(vert.shape[0]):
-            r2vert[0] = c * r1vert[i,0] - s * r1vert[i,1]
-            r2vert[1] = s * r1vert[i,0] + c * r1vert[i,1]
-            r2vert[2] = r1vert[i,2]
-
-            phi = math.asin(r2vert[2] / r0)
-            theta = math.atan2(r2vert[1], r2vert[0])
-            self.footprintPos[i,0] = ( theta + math.pi) * self.backgroundSize[0] / (2.0  *math.pi)
-            self.footprintPos[i,1] = ( phi + math.pi/2) * self.backgroundSize[1] / math.pi
-            if  self.footprintPos[i,0] > max_x:
-                max_x = self.footprintPos[i,0]
-            if self.footprintPos[i,0] < min_x:
-                min_x = self.footprintPos[i,0]
-
-        phi = math.asin(midpt[2] / r0)
-        theta = math.atan2(midpt[1], midpt[0])
-        midptpix = [( theta + math.pi) * self.backgroundSize[0] / (2.0  *math.pi),
-                    ( phi + math.pi/2) * self.backgroundSize[1] / math.pi]
-        self.footprintSplit = False
-        if math.fabs((min_x+max_x)/2 - midptpix[0]) > 10:
-            #print 'Splitting',self.sat,midptpix, 'Min', min_x, 'Max', max_x
-            self.footprintSplit = True
-
+            self.footprintSplit = False
+            self.footprintPos = np.zeros((360/5, 2), np.float)
         
     def mousePressEvent(self, event):
         print self.marker_id," got clicked ",self.sat.name
@@ -379,7 +381,6 @@ class Satellite(QtGui.QGraphicsRectItem):
             tdy = datetime.date.today()
             tmp = datetime.datetime.strptime(str(tdy.year)+'/'+etime_start, '%Y/%m/%d %H:%M:%S') - self.parent.dtime
 
-            print tmp
             for x in xrange(len(self.passList)):
                 if abs(tmp - self.passList[x][0].datetime()) < datetime.timedelta(seconds=60.0):
                     self.eventList.append((self.passList[x][0], self.passList[x][4]))
